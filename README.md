@@ -18,8 +18,8 @@
 
 当前原型
 
-![idle-page](./assets\029e864d-99e2-4e1e-9b63-3fb6f015b3c5.png "idle-page")
+![idle-page](https://picx.zhimg.com/80/v2-0cf28fe9d03f0ac4ea042df9781dd2eb_720w.png "idle-page")
 
 
 
-![chat-page](./assets\7c2ff732-32a7-436f-8694-cace22f3efab.png "chat-page")
+![chat-page](https://picx.zhimg.com/80/v2-e9ddce834048f6a89db5717947b1efc9_720w.png "chat-page")
