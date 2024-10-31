@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+import CounterComp from '@/components/CounterComp.vue'
+import { useCounterStore } from '@/stores/counter'
+const counter = useCounterStore()
 </script>
 
 <template>
   <main>
-    <TheWelcome />
+    cur count: {{ counter.count }}
+    <CounterComp />
   </main>
 </template>
