@@ -29,7 +29,7 @@ npm run dev
 4. 删除项目初始冗余的组件和代码
 5. 引入外部依赖
 
-- 按需自动引入依赖插件
+### 按需自动引入依赖插件
 
 > 避免在多个页面重复引入 API 或 组件
 
@@ -77,6 +77,52 @@ export default defineConfig({
 ```
 
 执行`npm run dev`生成依赖声明文件，测试将原有的引用声明删除。
+
+### 引入 SVG 图标支持
+
+```bash
+# 安装 latest 避免废弃警告，使用 npm outdated 查看可以更新的包
+# 使用 npm audit fix 可尝试自动修复有问题的依赖
+npm install -D fast-glob@latest
+npm install -D vite-plugin-svg-icons@2.0.1
+```
+
+创建 `src/assets/icons`目录，放入[iconfont](https://www.iconfont.cn)中下载的 svg 图标
+
+在[main.ts](./src/main.ts)中引入注册脚本
+
+```typescript
+// src/main.ts
+import 'virtual:svg-icons-register'
+```
+
+配置[vite.config.ts](./vite.config.ts)插件
+
+```typescript
+import { resolve } from 'path'
+const pathSrc = resolve(__dirname, 'src')
+
+import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
+
+export default defineConfig({
+  plugins: [
+    createSvgIconsPlugin({
+      // 指定需要缓存的图标文件夹
+      iconDirs: [resolve(pathSrc, 'assets/icons')],
+      // 指定symbolId格式
+      symbolId: 'icon-[dir]-[name]',
+    }),
+  ],
+})
+```
+
+封装 [SVG组件](./src/components/SvgIcon.vue)
+
+使用例
+
+```html
+<button @click="add"><svg-icon icon-class="sailboat" />increase</button>
+```
 
 ## 部署参考
 

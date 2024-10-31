@@ -10,5 +10,6 @@ declare module 'vue' {
     CounterComp: typeof import('./../components/CounterComp.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SvgIcon: typeof import('./../components/SvgIcon.vue')['default']
   }
 }
