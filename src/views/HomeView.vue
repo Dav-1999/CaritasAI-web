@@ -1,13 +1,14 @@
 <script setup lang="ts">
 const counter = useCounterStore()
 const title = import.meta.env.VITE_APP_TITLE as string
-// 测试本地服务器转发 https://api.caritas.pro/article/getTagsMap
-const resp = ref('');
+// 测试本地服务器转发 https://api.caritas.pro/subject/getSubjectList
+const resp = ref<ResponseData | null>(null)
 
 onMounted(async () => {
-  await fetch(`${import.meta.env.VITE_APP_BASE_URL}/article/getTagsMap`).then(res => res.json()).then(res => {
-    resp.value = res
-    console.log(resp);
+  await fetch(`${import.meta.env.VITE_APP_BASE_URL}/subject/getSubjectList`).then(res => res.json()).then(res => {
+    const data = res as ResponseData
+    resp.value = data
+    console.log(resp.value.data);
 
   })
 })
