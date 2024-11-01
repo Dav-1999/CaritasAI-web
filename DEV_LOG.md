@@ -2,6 +2,8 @@
 
 ## 初始化项目
 
+### 项目基本配置
+
 1. 添加日志文件
 2. 初始化 vue 项目
 
@@ -136,6 +138,86 @@ import './styles/main.css'
 ```
 
 > 后续需要兼容移动端可考虑[material-web组件](https://github.com/material-components/material-web?tab=readme-ov-file#material-web)
+
+
+### 添加环境变量配置和本地请求转发
+
+根目录新建 `.env.production` 和 `.env.development`两个配置文件
+
+编写环境变量并在代码中测试使用
+
+> `npm run bulid`中打开的页面和`npm run dev`打开的页面应观察到使用的变量值不同
+
+```yaml
+# .env.development
+# 变量以VITE_开头才能被读取
+VITE_APP_TITLE='开发环境'
+VITE_APP_PROT=4200
+VITE_APP_BASE_PRFIX='/api'
+# 本地开发环境下请求地址，生产环境时替换为转发目标即可
+VITE_APP_BASE_URL='http://localhost:4200/api'
+# 转发目标
+VITE_APP_API_URL='https://api.caritas.pro'
+```
+
+在[vite.config.ts](./vite.config.ts)中修改代码引入环境变量加载.env配置，并配置本地转发
+
+> [vite相关配置说明](https://cn.vitejs.dev/config/#using-environment-variables-in-config)
+
+```typescript
+import { defineConfig, loadEnv } from 'vite'
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd())
+  return {
+    // 用于本地代理转发，使 host:port/api/xxx 转发到 target/xxx
+    server: {
+      host: '0.0.0.0',
+      // 使用 + 号将字符串转为数字
+      port: +env.VITE_APP_PROT,
+      open: true,
+      proxy: {
+        // 代理前缀为 /api 的请求
+        [env.VITE_APP_BASE_PRFIX]: {
+          changeOrigin: true,
+          // 代理目标真实接口地址：https://api.caritas.pro
+          target: env.VITE_APP_API_URL,
+          rewrite: (path) =>
+            path.replace(new RegExp("^" + env.VITE_APP_BASE_PRFIX), ""),
+        },
+      },
+    },
+    ……
+  }});
+```
+
+使用测试
+
+```vue
+<script setup lang="ts">
+const title = import.meta.env.VITE_APP_TITLE as string
+// 测试本地服务器转发 https://api.caritas.pro/article/getTagsMap
+const resp = ref('');
+
+onMounted(async () => {
+  await fetch(`${import.meta.env.VITE_APP_BASE_URL}/article/getTagsMap`).then(res => res.json()).then(res => {
+    resp.value = res
+    console.log(resp);
+
+  })
+})
+</script>
+
+<template>
+  <h2>{{ title }}</h2>
+  <main>
+    <pre>
+      {{ resp }}
+    </pre>
+  </main>
+</template>
+```
+
 
 
 ## 部署参考
