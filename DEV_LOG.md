@@ -108,7 +108,7 @@ export default defineConfig({
   plugins: [
     createSvgIconsPlugin({
       // 指定需要缓存的图标文件夹
-      iconDirs: [resolve(pathSrc, 'assets/icons')],
+      iconDirs: [resolve(pathSrc, 'assets', 'icons')],
       // 指定symbolId格式
       symbolId: 'icon-[dir]-[name]',
     }),
@@ -121,7 +121,9 @@ export default defineConfig({
 使用例
 
 ```html
+<!-- 会受容器的color属性影响，注意下载的svg文件内不应有内联的fill属性导致无法设置颜色 -->
 <button @click="add"><svg-icon icon-class="sailboat" />increase</button>
+<svg-icon icon-class="up" color="tomato" />
 ```
 
 ### 修改样式文件位置，修改默认 css
