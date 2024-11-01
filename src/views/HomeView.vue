@@ -1,23 +1,38 @@
 <script setup lang="ts">
-const counter = useCounterStore()
-const title = import.meta.env.VITE_APP_TITLE as string
-// 测试本地服务器转发 https://api.caritas.pro/subject/getSubjectList
-const resp = ref<ResponseData>()
 
-onMounted(async () => {
-  const { data } = await clientFetch<ResponseData>('/subject/getSubjectList').get().json()
-  resp.value = data.value
-
-})
 </script>
 
 <template>
-  <h2>{{ title }}</h2>
   <main>
-    cur count: {{ counter.count }}
-    <pre>
-      {{ resp }}
-    </pre>
-    <CounterComp />
+
+    <aside>
+      边栏
+    </aside>
+    <article>
+
+      内容组件
+    </article>
   </main>
 </template>
+
+<style scoped>
+main {
+  display: flex;
+  height: 100vh;
+  font-size: 2em;
+}
+
+aside {
+  flex: 1;
+  background-color: #fafafa;
+  align-content: center;
+  text-align: center;
+}
+
+article {
+  flex: 3;
+  background-color: azure;
+  align-content: center;
+  text-align: center;
+}
+</style>
