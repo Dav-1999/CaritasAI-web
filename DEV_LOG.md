@@ -218,7 +218,28 @@ onMounted(async () => {
 </template>
 ```
 
+### 引入VueUse
 
+> [VueUse](https://vueuse.pages.dev/guide/) 是基于组合 API的一系列实用函数集合。
+
+当前主要用于简化 SSE 请求和虚拟列表实现等。
+
+```bash
+npm i @vueuse/core
+```
+安装后，在[vite.config.ts](./vite.config.ts)中添加自动引入，并新建[src/api/api.ts](./src/api/api.ts)用于后续管理网络请求相关抽象接口。
+
+具体 useFetch 使用代码案例似乎不多，当前仅封装 baseUrl，后续可以封装一些请求方法，token传递等
+
+> 此处 ResponseData 是全局类型声明中定义的[src/types/global.d.ts](./src/types/global.d.ts)
+
+```typescript
+const resp = ref<ResponseData>()
+onMounted(async () => {
+  const { data } = await clientFetch<ResponseData>('/subject/getSubjectList').get().json()
+  resp.value = data.value
+})
+```
 
 ## 部署参考
 
