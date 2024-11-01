@@ -1,0 +1,35 @@
+/* 属性变量 */
+:root {
+  --white: #fafafa;
+  --black: #212121;
+  --gray: #eeeeee;
+}
+/* 可读属性变量 */
+:root {
+  --color-background: var(--gray);
+  --color-text: var(--black);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  line-height: 1.6;
+  font-size: 16px;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  /* 优化文字的渲染，使得较小的文本更清晰易读，特别是对曲线和斜体字效果有提升。 */
+  text-rendering: optimizeLegibility;
+  /* 在 WebKit 浏览器（如 Safari 和 Chrome）中启用字体抗锯齿，进一步提升字体平滑度。 */
+  -webkit-font-smoothing: antialiased;
+  /* 在 macOS 系统的 Firefox 浏览器中使用灰度抗锯齿，使文本显示更锐利。 */
+  -moz-osx-font-smoothing: grayscale;
+}

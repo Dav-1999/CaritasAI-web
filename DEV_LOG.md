@@ -124,6 +124,18 @@ export default defineConfig({
 <button @click="add"><svg-icon icon-class="sailboat" />increase</button>
 ```
 
+### 修改样式文件位置，修改默认 css
+
+将`assets`下的css放于项目`src/styles`下，修改[main.ts](./src/main.ts)中的引入路径。
+
+```typescript
+// src/main.ts
+import './styles/main.css'
+```
+
+> 后续需要兼容移动端可考虑[material-web组件](https://github.com/material-components/material-web?tab=readme-ov-file#material-web)
+
+
 ## 部署参考
 
 - [Vue3.3 + Vite+ Element-Plus + TypeScript 从0到1搭建企业级后台管理系统（前后端开源）](https://juejin.cn/post/7228990409909108793)
