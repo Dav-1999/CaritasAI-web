@@ -10,6 +10,7 @@
 ```bash
 # 使用 TS,
 # 启用 Router、Pinia（页面跳转和状态管理功能支持）
+# 启用 mitt（组件通信）、axios（网络请求）、vite-plugin-vue-setup-extend（声明组件名）、bootstrap-icons（图标库）
 # 引入ESLint、Prettier（校验和格式化代码）
 npm create vue@latest
 npm install

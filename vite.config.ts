@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
-
+import vueSetupExtend from 'vite-plugin-vue-setup-extend'
 import { resolve } from 'path'
 const pathSrc = resolve(__dirname, 'src')
 
@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       vue(),
+      vueSetupExtend(),
       AutoImport({
         // 指定需要自动导入的库
         imports: ['vue', 'pinia', 'vue-router', '@vueuse/core'],

@@ -1,5 +1,7 @@
-import './styles/main.css'
-import 'virtual:svg-icons-register'
+// import './styles/main.css'
+// import 'virtual:svg-icons-register'
+//导入bootstrap图标
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
