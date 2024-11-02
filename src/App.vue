@@ -1,11 +1,12 @@
 <script setup lang="ts">
+const sidebar_collapsed = ref(true);
 </script>
 
 <template>
 
   <main>
 
-    <aside>
+    <aside :style="{width: sidebar_collapsed?'10%':'30%'}">
       <ul>
         <li><router-link to="/">Home</router-link></li>
         <li><router-link to="/chat">Chat</router-link></li>
@@ -26,7 +27,7 @@ main {
 }
 
 aside {
-  flex: 1;
+  width: 30%;
   background-color: #fafafa;
   align-content: center;
   text-align: center;
