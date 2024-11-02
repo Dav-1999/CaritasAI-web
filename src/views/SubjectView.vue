@@ -7,7 +7,12 @@
       </button>
     </header>
     <main>
-      <article>内容区域</article>
+      <article>内容区域
+        <p v-if="subjectResp.isFetching">loading</p>
+        <pre v-else style="font-size: small;">
+            {{ subjectResp.data }}
+        </pre>
+      </article>
       <aside :style="{ display: subproblem_list_collasped ? 'none' : 'flex' }">
         子问题区域
       </aside>
@@ -17,6 +22,14 @@
 
 <script setup lang="ts">
 const subproblem_list_collasped = ref(true)
+
+
+const getSubjectList = () =>{
+  const { isFetching, error, data } = useFetch<ResponseData>('https://httpbin.org/delay/4').get()
+  return ref({ isFetching, error, data })
+}
+
+const subjectResp = getSubjectList()
 </script>
 
 <style scoped>
