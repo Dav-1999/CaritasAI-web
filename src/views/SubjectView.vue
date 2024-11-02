@@ -2,12 +2,12 @@
   <div class="subject-container">
     <header>
       <div>栏目列表</div>
-      <button @click="subproblem_list_collasped=!subproblem_list_collasped">子问题</button>
+      <button @click="subproblem_list_collasped = !subproblem_list_collasped">
+        子问题
+      </button>
     </header>
     <main>
-      <article>
-        内容区域
-      </article>
+      <article>内容区域</article>
       <aside :style="{ display: subproblem_list_collasped ? 'none' : 'flex' }">
         子问题区域
       </aside>
@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-const subproblem_list_collasped = ref(true);
+const subproblem_list_collasped = ref(true)
 </script>
 
 <style scoped>
