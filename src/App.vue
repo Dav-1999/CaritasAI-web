@@ -6,12 +6,13 @@ const sidebar_collapsed = ref(true);
 
   <main>
 
-    <aside :style="{width: sidebar_collapsed?'10%':'30%'}">
-      <ul>
+    <aside :style="{width: sidebar_collapsed?'8%':'24%'}">
+      <ul :style="{display: sidebar_collapsed?'none':'block'}">
         <li><router-link to="/">Home</router-link></li>
         <li><router-link to="/chat">Chat</router-link></li>
         <li><router-link to="/subject">Subject</router-link></li>
       </ul>
+      <button @click="sidebar_collapsed=!sidebar_collapsed">fold</button>
     </aside>
     <article>
       <RouterView />
@@ -27,7 +28,7 @@ main {
 }
 
 aside {
-  width: 30%;
+  width: 24%;
   background-color: #fafafa;
   align-content: center;
   text-align: center;
