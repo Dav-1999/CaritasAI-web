@@ -37,17 +37,23 @@ onBeforeMount(()=>{
 
 <template>
    <Tooltip :content="tool" :isVisible="isVisible" :is-sliding-out="isSlidingOut"/>
-  <main class="app-main">
-    <aside :style="{ width: sidebar_collapsed ? '40px' : '200px' }">
-      <div class="title" :style="{'justify-content':sidebar_collapsed? 'center' : 'space-between'}">
-        <h2 :style="{ display: sidebar_collapsed ? 'none' : 'block','font-family': 'Arial, sans-serif','font-style': 'italic'}">Caritas AI</h2>
-        <button @click="sidebar_collapsed = !sidebar_collapsed"><i :class="!sidebar_collapsed?'fa fa-arrow-left':'fa fa-arrow-right'"></i></button>
+   <main class="app-main">
+    <aside :style="{ transition: 'width 0.3s', width: sidebar_collapsed ? '40px' : '200px' }">
+      <div class="title" :style="{ justifyContent: sidebar_collapsed ? 'center' : 'space-between' }">
+        <transition name="fade">
+          <h2 v-if="!sidebar_collapsed" :style="{ 'font-family': 'Arial, sans-serif', 'font-style': 'italic' }">Caritas AI</h2>
+        </transition>
+        <button @click="sidebar_collapsed = !sidebar_collapsed">
+          <i :class="!sidebar_collapsed ? 'bi bi-unindent' : 'bi bi-indent'"></i>
+        </button>
       </div>
-      <ul :style="{ display: sidebar_collapsed ? 'none' : 'block','text-align':'left'}">
-        <li><router-link class="router-link" to="/"><i class="bi bi-search-heart" style="margin-right: 10px;font-size: 20px;"></i>Home</router-link></li>
-        <li><router-link class="router-link" to="/chat"><i class="bi bi-unity" style="margin-right: 10px;font-size: 20px;"></i>Chat</router-link></li>
-        <li><router-link class="router-link" to="/subject"><i class="bi bi-layout-text-window-reverse" style="margin-right: 10px;font-size: 20px;"></i>Subject</router-link></li>
-      </ul>
+      <transition name="fade">
+        <ul v-if="!sidebar_collapsed" :style="{ 'text-align': 'left' }">
+          <li><router-link class="router-link" to="/"><i class="bi bi-house" style="margin-right: 10px;font-size: 20px;"></i>Home</router-link></li>
+          <li><router-link class="router-link" to="/chat"><i class="bi bi-unity" style="margin-right: 10px;font-size: 20px;"></i>Chat</router-link></li>
+          <li><router-link class="router-link" to="/subject"><i class="bi bi-layers" style="margin-right: 10px;font-size: 20px;"></i>Subject</router-link></li>
+        </ul>
+      </transition>
     </aside>
     <article>
       <RouterView />
@@ -56,6 +62,12 @@ onBeforeMount(()=>{
 </template>
 
 <style scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
 .app-main {
   display: flex;
   height: 100vh;
@@ -67,11 +79,13 @@ onBeforeMount(()=>{
   background-color: #fafafa;
   align-content: top;
   text-align: right;
+  transition: width 0.5s;
 }
 .app-main aside .title{
   height: 40px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 15px;
 }
 .app-main aside .title button{
@@ -84,6 +98,13 @@ onBeforeMount(()=>{
     color: #555;
     cursor: pointer; /* 改变鼠标样式 */
 }
+
+.app-main aside .title h2 {
+  padding-right:5px ;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .app-main article {
   height: 100%;
   width: 100%;
@@ -95,17 +116,23 @@ onBeforeMount(()=>{
 
 .app-main ul {
   margin: 0;
-  padding: 15px;
+  padding: 15px 0;
 }
 
 .app-main ul li {
   list-style: none;
-  margin: 2em 0;
+  padding: 1em 15px;
   font-size: 18px;
+  display: flex;
+  align-items: center;
 
-  a {
+  /* a {
     text-decoration: none;
-  }
+  } */
+}
+.app-main ul li:hover{
+  background-color: #edf0ed;
+  color: #4CAF50;
 }
 .app-main ul li i{
   font-size: 18px;
@@ -115,6 +142,9 @@ onBeforeMount(()=>{
 .app-main .router-link {
   text-decoration: none;
   color: black;
+}
+.app-main .router-link:hover{
+  color: #4CAF50;
 }
 
 .app-main .router-link-exact-active {
