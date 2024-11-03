@@ -4,7 +4,7 @@ import emitter from '../utils/emitter'
 // import axios from 'axios'
 export default async function (messages:Message[]) : Promise<Message[]>{
 // 后端的接口
-const url = "https://api.caritas.pro/zhiPuAi/sseInvoke?prompt=";
+const url = import.meta.env.VITE_APP_BASE_BAIZE_URL+"/zhiPuAi/sseInvoke?prompt=";
 
 /**
  * 使用axios返回所有数据
