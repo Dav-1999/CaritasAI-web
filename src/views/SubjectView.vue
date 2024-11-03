@@ -166,7 +166,7 @@ article {
   flex: 4;
   max-height: calc(100vh - 64px);
   overflow-y: auto;
-  background-color: azure;
+  /* background-color: azure; */
 
   /* 隐藏滚动条 */
   /* &::-webkit-scrollbar {

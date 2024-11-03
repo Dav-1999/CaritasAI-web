@@ -49,9 +49,9 @@ onBeforeMount(()=>{
       </div>
       <transition name="fade">
         <ul v-if="!sidebar_collapsed" :style="{ 'text-align': 'left' }">
-          <router-link class="router-link" to="/"><li><i class="bi bi-house" style="margin-right: 10px;font-size: 20px;"></i>Home</li></router-link>
+          <!-- <router-link class="router-link" to="/"><li><i class="bi bi-house" style="margin-right: 10px;font-size: 20px;"></i>Home</li></router-link> -->
           <router-link class="router-link" to="/chat"><li><i class="bi bi-unity" style="margin-right: 10px;font-size: 20px;"></i>Chat</li></router-link>
-          <router-link class="router-link" to="/subject"><li><i class="bi bi-layers" style="margin-right: 10px;font-size: 20px;"></i>Subject</li></router-link>
+          <router-link class="router-link" to="/subject"><li><i class="bi bi-layers" style="margin-right: 10px;font-size: 20px;"></i>栏目</li></router-link>
         </ul>
       </transition>
     </aside>
@@ -109,7 +109,7 @@ onBeforeMount(()=>{
   height: 100%;
   width: 100%;
   flex: 3;
-  background-color: azure;
+  /* background-color: azure; */
   align-content: center;
   text-align: center;
 }
