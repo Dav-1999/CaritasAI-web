@@ -13,7 +13,7 @@ export const getArticle = async (id: number) => {
   )
     .get()
     .json()
-  return data.value
+  return data.value.data
 }
 
 export const getRelationCount = async () => {
