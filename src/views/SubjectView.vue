@@ -35,7 +35,7 @@
       </article>
       <aside :style="{ display: subproblem_list_collasped ? 'none' : 'flex' }">
         <TabLayout class="subproblem-list" v-if="needRefreshComp" :is-vertical="true"
-          :tabs="pageData.subproblemList.map(item => item.name)" @tab-selected="hanldeSwitchSubproblem" />
+          :tabs="pageData.subproblemList.map(item => item.name + ' | ' + item.articleCount)" @tab-selected="hanldeSwitchSubproblem" />
       </aside>
     </main>
   </div>
@@ -47,7 +47,7 @@ import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subjec
 const subproblem_list_collasped = ref(true)
 const pageData = ref({
   relationCount: 0,
-  pageNum: 0,
+  pageNum: -1,
   pageSize: 4,
   subjectId: 1,
   subproblemId: 9132,
@@ -102,6 +102,7 @@ const hanldeSwitchSubject = (index: number) => {
   pageData.value.pageNum = 0;
   pageData.value.articleList = [];
   pageData.value.isCanLoadMore = true;
+  pageData.value.isLoadEnd = false;
   refreshComponent();
   reset();
 }
@@ -111,6 +112,7 @@ const hanldeSwitchSubproblem = (index: number) => {
   pageData.value.pageNum = 0;
   pageData.value.articleList = [];
   pageData.value.isCanLoadMore = true;
+  pageData.value.isLoadEnd = false;
   reset();
 }
 
