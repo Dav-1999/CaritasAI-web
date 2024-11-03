@@ -5,12 +5,11 @@
   /* flex-direction: column;
   align-items: center;
   justify-content: center; */
-  
+
   margin: 0 auto;
   padding: 0 1rem;
   max-width: 60%;
 }
-
 
 .card {
   display: flex;
@@ -18,7 +17,9 @@
   background-color: #deebe9;
   width: 100%;
   margin: 8px;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
   border-radius: 8px;
   img {
     width: 100%;
@@ -35,8 +36,14 @@
     }
     .title {
       font-size: 18px;
-      color: #212121;
+      color: #20545e;
       text-align: start;
+      line-clamp: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
     }
     .content {
       font-size: 14px;

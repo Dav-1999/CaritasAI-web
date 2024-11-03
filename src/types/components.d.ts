@@ -19,6 +19,7 @@ declare module 'vue' {
     SearchTerms: typeof import('./../components/SearchTerms.vue')['default']
     SvgIcon: typeof import('./../components/SvgIcon.vue')['default']
     SwitchComponent: typeof import('./../components/SwitchComponent.vue')['default']
+    TabLayout: typeof import('./../components/TabLayout.vue')['default']
     Tooltip: typeof import('./../components/Tooltip.vue')['default']
     WordCloudComponent: typeof import('./../components/WordCloudComponent.vue')['default']
   }
