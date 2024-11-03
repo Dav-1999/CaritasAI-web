@@ -99,7 +99,7 @@ const hanldeSwitchSubject = (index: number) => {
   pageData.value.subjectId = pageData.value.subjectList[index].id;
   pageData.value.subproblemList = pageData.value.subjectList[index].subProblemList;
   pageData.value.subproblemId = pageData.value.subproblemList[0].id;
-  pageData.value.pageNum = 0;
+  pageData.value.pageNum = -1;
   pageData.value.articleList = [];
   pageData.value.isCanLoadMore = true;
   pageData.value.isLoadEnd = false;
@@ -109,7 +109,7 @@ const hanldeSwitchSubject = (index: number) => {
 
 const hanldeSwitchSubproblem = (index: number) => {
   pageData.value.subproblemId = pageData.value.subproblemList[index].id;
-  pageData.value.pageNum = 0;
+  pageData.value.pageNum = -1;
   pageData.value.articleList = [];
   pageData.value.isCanLoadMore = true;
   pageData.value.isLoadEnd = false;
