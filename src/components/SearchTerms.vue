@@ -12,7 +12,8 @@ import emitter from '@/utils/emitter';
 const items= ['婚姻的尽头什么', '社恐的人应该怎么去改善自身', '时常感到孤独的人应该何去何从', '人际关系对自身的影响力'];
 //方法
 function sendMessage(content:string) {
-  emitter.emit("send-message", { id: Date.now(), sender: 'user', text: content });
+  emitter.emit("send-message", { id: Date.now(), sender: 'user', content: content ,isShowOptions:false,contentType:'text',isRequestOver:true});
+  emitter.emit("change-show-input",false)
 }
 </script>
 
@@ -35,6 +36,7 @@ function sendMessage(content:string) {
   border: 1px solid #ddd; /* 边框 */
   border-radius: 6px;
   font-weight: 700;
+  font-size: 0.9rem;
   color: #38584e;
    /* 鼠标悬停时显示指针 */
   cursor: pointer;

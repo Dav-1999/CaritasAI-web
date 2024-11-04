@@ -30,7 +30,7 @@ export const useHistoryStore = defineStore('history',{
     },
     //添加新的对话
     addHistory(history:History){
-      history.content = history.messages[0].text
+      history.content = history.messages[0].content.toString()
       history.id = Date.now();
       history.createTime = Date.now();
       history.state = 1;

@@ -9,7 +9,7 @@
       <button @click="sendMessage"><i class="fa fa-arrow-right" style="font-size:18px"></i></button>
     </div>
   </div>
-    <SearchTerms v-if="!chatType"/>
+    <SearchTerms/>
   </div>
 </template>
 
@@ -28,7 +28,7 @@ const showInput = ref(!props.chatType)
 //方法
 function sendMessage() {
   if (inputMessage.value.trim() === '') return;
-  emitter.emit("send-message", { id: Date.now(), sender: 'user', text: inputMessage.value ,endTheOutput:true});
+  emitter.emit("send-message", { id: Date.now(), sender: 'user', content: inputMessage.value ,isShowOptions:false,contentType:'text',isRequestOver:true});
   inputMessage.value = '';
   showInput.value = false;
 
@@ -36,7 +36,6 @@ function sendMessage() {
 
 onMounted(()=>{
   emitter.on("change-show-input",(event)=>{
-    console.log(event);
     showInput.value = event as boolean
   })
 })

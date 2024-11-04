@@ -42,7 +42,7 @@ const chatType = history.messages.length>0;
   display: flex;
   flex-direction: column;
   height: calc(100% - 40px);
-  width:calc(100% - 150px);;
+  width:calc(100% - 200px);;
   overflow: hidden;
   align-items: center;
   padding-bottom: 40px;

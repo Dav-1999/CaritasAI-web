@@ -12,6 +12,7 @@ declare module 'vue' {
     ChatMessage: typeof import('./../components/ChatMessage.vue')['default']
     ChatSend: typeof import('./../components/ChatSend.vue')['default']
     ChatShow: typeof import('./../components/ChatShow.vue')['default']
+    'CircularProgressBar ': typeof import('./../components/CircularProgressBar .vue')['default']
     CounterComp: typeof import('./../components/CounterComp.vue')['default']
     InputComponent: typeof import('./../components/InputComponent.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

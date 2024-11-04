@@ -1,11 +1,38 @@
 <template>
   <div  class="message" :class="getMessageClasses(message.sender)">
-    <img :src="getAvatar(message.sender)" alt="Avatar" class="avatar" :class="message.sender">
+    <!-- <img :src="getAvatar(message.sender)" alt="Avatar" class="avatar" :class="message.sender"> -->
     <div class="bubble-container" :class="message.sender">
-      <div class="bubble">
-        {{ message.text }}
+      <div v-if="message.contentType == 'text'" class="bubble">
+        <CircularProgressBar
+        v-if="!message.isRequestOver"
+      :progress="progressValue"
+      :diameter="30"
+      :strokeWidth="4"
+      backgroundStroke="#e6e6e6"
+      progressStroke="#3fb984"
+    />
+        {{ message.content }}
       </div>
-      <div v-if="message.sender=='ai' && message.endTheOutput && message.text.indexOf(('你的问题可能偏离了主题')) >=0" class="div-choose">
+      <div v-else class="bubble" style="width: 100%;">
+        <CircularProgressBar
+        v-if="!message.isRequestOver"
+      :progress="50"
+      :diameter="30"
+      :strokeWidth="3"
+      backgroundStroke="#e6e6e6"
+      progressStroke="#3fb984"
+    />
+        <div style="padding-bottom: 10px;">{{message.content.preface}}：</div>
+        <div style="background-color: #edf0ed;padding: 12px;border-radius: 5px;">
+          <div v-for="(item, index) in message.content.content" :key="index">
+            <div v-if="item.title && item.title.trim()" style="padding: 10px 0;">
+              <div @click="goToOut(item.url)" style="font-size: 1rem;color: #4CAF50;margin-bottom: 8px;font-weight: 600;cursor: pointer;max-width: 100%;">{{ item.title }}</div>
+              <div style="font-size: 0.9rem;">相关度：{{ item.distance }}</div>
+            </div>
+          </div>
+      </div>
+      </div>
+      <div v-if="message.sender=='ai' && message.isShowOptions && message.contentType == 'text'" class="div-choose">
           <div @click="continueQuestions"><i class="fa fa-check" style="font-size:18px;color: white;margin-right: 10px;"></i>是的，继续</div>
           <div @click="againQuestions"><i class="fa fa-bell" style="font-size:18px;margin-right: 10px;"></i>不完全是，我重新提问</div>
         </div>
@@ -15,14 +42,18 @@
 
 <script lang='ts' setup>
 import emitter from '@/utils/emitter';
+import CircularProgressBar from "@/components/CircularProgressBar .vue"
+import {onMounted,onUnmounted} from 'vue'
 
 //数据
 const { message } = defineProps(['message']);
+const progressValue = ref(0);
+const maxProgressTime = ref(4000); // 假设最大等待时间为10000毫秒（4秒）
 
 //方法
-function getAvatar(sender: 'user' | 'ai') {
-  return sender === 'user' ? 'https://gd-hbimg.huaban.com/7968f776596196a8061e9ee0ee51c0606d785fc42400b-9aWWPH_fw236' : 'https://www.xiguama.com/content/templates/default/static/images/randem/pic14.jpg';
-};
+// function getAvatar(sender: 'user' | 'ai') {
+//   return sender === 'user' ? 'https://gd-hbimg.huaban.com/7968f776596196a8061e9ee0ee51c0606d785fc42400b-9aWWPH_fw236' : 'https://www.xiguama.com/content/templates/default/static/images/randem/pic14.jpg';
+// };
 
 function getMessageClasses(sender:string) {
       return {
@@ -36,14 +67,48 @@ function getMessageClasses(sender:string) {
 function continueQuestions(){
   emitter.emit("change-show-input",false)
   // eslint-disable-next-line vue/no-mutating-props
-  message.endTheOutput = false;
+  message.isShowOptions = false;
+  emitter.emit("send-message", { id: Date.now(), sender: 'user', content: message.updateContent ,isShowOptions:false,contentType:'text',isRequestOver:true});
 };
 
 function againQuestions(){
   emitter.emit("change-show-input",true)
   // eslint-disable-next-line vue/no-mutating-props
-  message.endTheOutput = false;
+  message.isShowOptions = false;
 }
+function goToOut(url:string) {
+  window.open(url, '_blank');
+}
+
+function startProgress() {
+  progressValue.value = 0;
+  const startTime = Date.now();
+  // console.log("进度开始")
+  const interval = setInterval(() => {
+    const elapsedTime = Date.now() - startTime;
+    progressValue.value = (elapsedTime / maxProgressTime.value) * 100;
+    if (progressValue.value >= 100) {
+      clearInterval(interval);
+    }
+  }, 100); // 每100毫秒更新一次进度
+}
+
+function stopProgress() {
+  progressValue.value = 100; // 确保进度条在请求完成后到达100%
+}
+
+onMounted(()=>{
+  emitter.on('start-progress',()=>{
+    startProgress();
+  })
+  emitter.on('stop-progress',()=>{
+    stopProgress();
+  })
+})
+onUnmounted(()=>{
+  emitter.off("start-progress")
+  emitter.off("stop-progress")
+})
 </script>
 
 <style scoped>
@@ -64,7 +129,8 @@ function againQuestions(){
 
 .bubble-container {
   position: relative;
-  width: calc(100% - 100px);
+  /* width: calc(100% - 100px); */
+  width: calc(100%);
 }
 
 .bubble {
@@ -103,7 +169,7 @@ function againQuestions(){
 }
 
 .user .bubble-container {
-  margin-left: 10px;
+  /* margin-left: 10px; */
   text-align: right;
 }
 
@@ -126,7 +192,7 @@ function againQuestions(){
 }
 
 .ai .bubble-container {
-  margin-right: 10px;
+  /* margin-right: 10px; */
   text-align: left;
 }
 
@@ -155,7 +221,7 @@ function againQuestions(){
   display: flex;
   align-items: center;
   padding: 0 15px;
-  width: calc(50% - 60px);
+  width: calc(50% - 100px);
   height: 100%;
   border-radius: 25px;
   /* 鼠标悬停时显示指针 */

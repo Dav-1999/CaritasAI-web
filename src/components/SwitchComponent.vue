@@ -9,7 +9,7 @@
     />
     <span class="slider round"></span>
   </label>
-   <div style="margin-left: 10px;font-weight: 700;color: rgb(107, 107, 107);">Pro</div>
+   <div style="margin-left: 10px;font-weight: 700;color: rgb(107, 107, 107);">对话</div>
 </template>
 
 <script lang="ts" setup name="SwitchComponent">

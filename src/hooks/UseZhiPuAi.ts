@@ -70,7 +70,7 @@ return new Promise<Message>(resolve => {fetch(url, {
               if (jsonStr !== '[DONE]') {
                 try {
                   const data = JSON.parse(jsonStr);
-                  message.text += data.choices[0].delta.content;
+                  message.content += data.choices[0].delta.content;
                   console.log(data.choices[0].delta.content); // 处理每个JSON对象
                 } catch (e) {
                   console.error('Error parsing JSON:', e);

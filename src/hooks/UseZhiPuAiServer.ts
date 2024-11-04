@@ -53,7 +53,7 @@ return new Promise<Message[]>(resolve => {fetch(url, {
               if (jsonStr !== '[DONE]') {
                 try {
                   const data = JSON.parse(jsonStr);
-                  messages[messages.length-1].text += data.choices[0].delta.content;
+                  messages[messages.length-1].content += data.choices[0].delta.content;
                   emitter.emit("show-scroll-bottom");
                   // console.log(data.choices[0].delta.content); // 处理每个JSON对象
                 } catch (e) {

@@ -8,12 +8,12 @@
 
 <script lang='ts' setup name="ChatShow">
 import type { Message } from '@/types/Meessage';
-import { ref, onUnmounted, onMounted,onUpdated, defineProps, toRaw } from 'vue'
+import { ref, onUnmounted, onMounted,onUpdated, defineProps } from 'vue'
 import emitter from '@/utils/emitter';
 import ChatMessage from './ChatMessage.vue';
 // import UseZhipuAi from '@/hooks/UseZhiPuAi'
-// import UseSemanticRetrieval from '@/hooks/UseSemanticRetrieval';
-import UseZhipuAiServer from '@/hooks/UseZhiPuAiServer'
+import UseSemanticRetrieval from '@/hooks/UseSemanticRetrieval';
+// import UseZhipuAiServer from '@/hooks/UseZhiPuAiServer'
 import { useHistoryStore } from '@/stores/history';
 import { useRouter } from 'vue-router';
 //数据
@@ -23,15 +23,17 @@ const router = useRouter();
 //方法
 function getAIResponse() {
   // eslint-disable-next-line vue/no-mutating-props
-  history.messages.push({ id: Date.now(), sender: 'ai', text: '' ,endTheOutput:false});
-  UseZhipuAiServer(history.messages).then(() => {
+  history.messages.push({ id: Date.now(), sender: 'ai', content: '' ,isShowOptions:false,contentType:"text",isRequestOver:false});
+  setTimeout(() => {
+    emitter.emit('start-progress');
+    setTimeout(() => {
+  UseSemanticRetrieval(history.messages).then(() => {
     if (history.state === 0) {
       Object.assign(history, useHistoryStore().addHistory(history))
         // eslint-disable-next-line vue/no-mutating-props
-        history.messages[history.messages.length-1].endTheOutput = true;
-        console.log("存入缓存：",toRaw(useHistoryStore().$state.historyList))
+        // console.log("存入缓存：",toRaw(useHistoryStore().$state.historyList))
         localStorage.setItem('historyList', JSON.stringify(useHistoryStore().$state.historyList));
-        console.log("当前缓存",localStorage.getItem('historyList')!)
+        // console.log("当前缓存",localStorage.getItem('historyList')!)
         router.replace({
         name: 'chatBox',
         params: {
@@ -40,13 +42,13 @@ function getAIResponse() {
       })
     } else {
         // eslint-disable-next-line vue/no-mutating-props
-        history.messages[history.messages.length-1].endTheOutput = true;
-        console.log("存入缓存：",useHistoryStore().$state.historyList);
+        // console.log("存入缓存：",useHistoryStore().$state.historyList);
         localStorage.setItem('historyList', JSON.stringify(useHistoryStore().$state.historyList));
-        console.log("当前缓存",localStorage.getItem('historyList')!);
+        // console.log("当前缓存",localStorage.getItem('historyList')!);
     }
   })
-  scrollToBottom();
+  scrollToBottom();}, 3000)
+}, 500);
 };
 
 function scrollToBottom() {
@@ -61,7 +63,7 @@ function scrollToBottom() {
 };
 
 onUpdated(()=>{
-    console.log("更新了")
+
   })
 onMounted(() => {
   emitter.on("send-message", (value:unknown) => {
@@ -91,7 +93,7 @@ onUnmounted(() => {
 .messages {
   flex-grow: 1;
   overflow-y: auto;
-  width: calc(40% - 40px);
+  width: calc(50% - 40px);
   padding: 20px;
 }
 
