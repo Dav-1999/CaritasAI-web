@@ -8,7 +8,7 @@
 
   margin: 0 auto;
   padding: 0 1rem;
-  max-width: 60%;
+  max-width: var(--content-width);
   --background-color: #FAE6CC;
   --text-color: #212121;
   --subtext-color: #646464;

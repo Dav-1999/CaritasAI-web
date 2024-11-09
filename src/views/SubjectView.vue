@@ -151,15 +151,13 @@ onMounted(async () => {
   height: 100vh;
   /* 定义往下使用的变量 */
   --header-height: 128px;
-  --content-width: 1280px;
-  --real-width: calc(var(--content-width) * 0.52);
+  --content-width: 1024px;
   --hight-light-color: #F2AB5E;
   /* 覆盖顶层背景色 */
   background-color: #FEFBF8;
   /* 不同屏幕尺寸下修改变量 */
   @media (max-width: 768px) {
-    --header-height: 64px;
-    --content-width: 100%;
+    --content-width: 420px;
   }
 
 }
@@ -178,19 +176,21 @@ header {
   align-items: center;
   flex-direction: column;
   >*{
-    max-width: var(--real-width);
+    max-width: var(--content-width);
   }
 }
 
 main {
   display: flex;
   flex: 1;
-  max-width: var(--content-width);
+  width: 100%;
+  justify-content: center;
   margin: 0 auto;
 }
 
 article {
   flex: 4;
+
   max-height: calc(100vh - var(--header-height));
   overflow-y: auto;
 
