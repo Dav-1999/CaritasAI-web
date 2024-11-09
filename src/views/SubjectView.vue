@@ -61,7 +61,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
 import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subject';
 
 // 页面数据状态管理
@@ -123,7 +122,7 @@ const loadMoreArticles = async () => {
 };
 
 // 使用无限滚动
-const { pause, resume } = useInfiniteScroll(
+useInfiniteScroll(
   listContainer,
   loadMoreArticles,
   {
