@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted ,onMounted,onBeforeMount} from 'vue';
+import { onUnmounted, onMounted, onBeforeMount } from 'vue';
 import { useHistoryStore } from './stores/history';
 import Tooltip from './components/Tooltip.vue';
 import { ref } from 'vue';
@@ -9,39 +9,40 @@ const isVisible = ref(false);
 const isSlidingOut = ref(true);
 const tool = ref("");
 const sidebar_collapsed = ref(true)
-onBeforeMount(()=>{
+onBeforeMount(() => {
   useHistoryStore().setHistoryListByLocal();
 })
-  onMounted(()=>{
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    emitter.on("show-tooltip",(event:any)=>{
-      console.log(event)
-      tool.value = event.tool;
-      isVisible.value = event.isVisible;
-      isSlidingOut.value = event.isSlidingOut;
-        setTimeout(() => {
-          isSlidingOut.value = true;
-          setTimeout(() => {
-            isVisible.value = false;
-            tool.value = "";
-          }, 1000); // 等待动画完成
-        }, 3000);
-    })
+onMounted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  emitter.on("show-tooltip", (event: any) => {
+    console.log(event)
+    tool.value = event.tool;
+    isVisible.value = event.isVisible;
+    isSlidingOut.value = event.isSlidingOut;
+    setTimeout(() => {
+      isSlidingOut.value = true;
+      setTimeout(() => {
+        isVisible.value = false;
+        tool.value = "";
+      }, 1000); // 等待动画完成
+    }, 3000);
   })
-  onUnmounted(()=>{
-    console.log("App被卸载了")
-    localStorage.setItem('historyList', JSON.stringify(useHistoryStore().$state.historyList));
-    emitter.off("show-tooltip");
-  })
+})
+onUnmounted(() => {
+  console.log("App被卸载了")
+  localStorage.setItem('historyList', JSON.stringify(useHistoryStore().$state.historyList));
+  emitter.off("show-tooltip");
+})
 </script>
 
 <template>
-   <Tooltip :content="tool" :isVisible="isVisible" :is-sliding-out="isSlidingOut"/>
-   <main class="app-main">
+  <Tooltip :content="tool" :isVisible="isVisible" :is-sliding-out="isSlidingOut" />
+  <main class="app-main">
     <aside :style="{ transition: 'width 0.3s', width: sidebar_collapsed ? '40px' : '200px' }">
       <div class="title" :style="{ justifyContent: sidebar_collapsed ? 'center' : 'space-between' }">
         <transition name="fade">
-          <h2 v-if="!sidebar_collapsed" :style="{ 'font-family': 'Arial, sans-serif', 'font-style': 'italic' }">Caritas AI</h2>
+          <h2 v-if="!sidebar_collapsed" :style="{ 'font-family': 'Arial, sans-serif', 'font-style': 'italic' }">Caritas
+            AI</h2>
         </transition>
         <button @click="sidebar_collapsed = !sidebar_collapsed">
           <i :class="!sidebar_collapsed ? 'bi bi-unindent' : 'bi bi-indent'"></i>
@@ -50,8 +51,12 @@ onBeforeMount(()=>{
       <transition name="fade">
         <ul v-if="!sidebar_collapsed" :style="{ 'text-align': 'left' }">
           <!-- <router-link class="router-link" to="/"><li><i class="bi bi-house" style="margin-right: 10px;font-size: 20px;"></i>Home</li></router-link> -->
-          <router-link class="router-link" to="/chat"><li><i class="bi bi-unity" style="margin-right: 10px;font-size: 20px;"></i>Chat</li></router-link>
-          <router-link class="router-link" to="/subject"><li><i class="bi bi-layers" style="margin-right: 10px;font-size: 20px;"></i>栏目</li></router-link>
+          <router-link class="router-link" to="/chat">
+            <li><i class="bi bi-unity" style="margin-right: 10px;font-size: 20px;"></i>Chat</li>
+          </router-link>
+          <router-link class="router-link" to="/subject">
+            <li><i class="bi bi-layers" style="margin-right: 10px;font-size: 20px;"></i>栏目</li>
+          </router-link>
         </ul>
       </transition>
     </aside>
@@ -62,12 +67,16 @@ onBeforeMount(()=>{
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s;
 }
-.fade-enter, .fade-leave-to {
+
+.fade-enter,
+.fade-leave-to {
   opacity: 0;
 }
+
 .app-main {
   display: flex;
   height: 100vh;
@@ -81,30 +90,34 @@ onBeforeMount(()=>{
   text-align: right;
   transition: width 0.5s;
 }
-.app-main aside .title{
+
+.app-main aside .title {
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 15px;
 }
-.app-main aside .title button{
+
+.app-main aside .title button {
   border: none;
   background-color: transparent;
   font-size: 18px;
 }
 
 .app-main aside .title button:hover {
-    color: #555;
-    cursor: pointer; /* 改变鼠标样式 */
+  color: #555;
+  cursor: pointer;
+  /* 改变鼠标样式 */
 }
 
 .app-main aside .title h2 {
-  padding-right:5px ;
+  padding-right: 5px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
 .app-main article {
   height: 100%;
   width: 100%;
@@ -130,29 +143,57 @@ onBeforeMount(()=>{
     text-decoration: none;
   } */
 }
-.app-main ul li:hover{
+
+.app-main ul li:hover {
   background-color: #edf0ed;
   color: #4CAF50;
 }
-.app-main ul li i{
+
+.app-main ul li i {
   font-size: 18px;
 
 
 }
+
 .app-main .router-link {
   text-decoration: none;
   color: black;
 }
-.app-main .router-link:hover{
+
+.app-main .router-link:hover {
   color: #4CAF50;
 }
 
 .app-main .router-link-exact-active {
-  color: #4CAF50; /* 激活时内容的字体颜色 */
+  color: #4CAF50;
+  /* 激活时内容的字体颜色 */
 }
 
 .app-main .router-link-active {
-  color: #4CAF50; /* 激活时内容的字体颜色 */
+  color: #4CAF50;
+  /* 激活时内容的字体颜色 */
 }
 
+aside {
+
+  background: linear-gradient(270deg, #F3C06B, #F3B779, #F4B083, #F4AA8B);
+  background-size: 1400% 1400%;
+  animation: gradient-animation 12s ease infinite;
+  /* 使用 CSS 动画 */
+
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
 </style>
