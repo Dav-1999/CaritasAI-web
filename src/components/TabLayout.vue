@@ -2,6 +2,9 @@
   <div class="tab-wrapper" ref="tabWrapper">
     <button v-if="showLeftButton" class="scroll-btn left" @click="scrollTabs('left')">❮</button>
     <div :class="['tab-container', isVertical ? 'vertical' : 'horizontal']" ref="tabContainer">
+      <div v-if="hasSetAll&&tabs.length" ref = "allSelector" class="tab activated" @click="selectAll">
+        全部
+      </div>
       <div
         v-for="(tab, index) in tabs"
         :key="index"
@@ -29,8 +32,12 @@ const props = defineProps({
   },
   selctedIndex: {
     type: Number,
-    default: 0,
+    default: -1,
   },
+  hasSetAll: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 const selectedIdx = ref(props.selctedIndex);
@@ -38,15 +45,28 @@ const showLeftButton = ref(false);
 const showRightButton = ref(false);
 const tabWrapper = ref(null);
 const tabContainer = ref(null);
-
+const allSelector = ref<null |　HTMLElement>(null);
 const emit = defineEmits<{
   (e: 'tab-selected', index: number): void;
+  (e: 'select-all'): void;
 }>();
 
 const selectTab = (index: number) => {
+  if (allSelector.value?.classList.contains('activated')) {
+    allSelector.value?.classList.remove('activated');
+  }
   selectedIdx.value = index;
   emit('tab-selected', index);
 };
+
+const selectAll = () => {
+  selectedIdx.value = -1;
+  // switch e avtivated
+  if (!allSelector.value?.classList.contains('activated')) {
+    allSelector.value?.classList.add('activated');
+  }
+  emit('select-all');
+}
 
 // 滚动函数
 const scrollTabs = (direction: 'left' | 'right') => {
@@ -106,7 +126,7 @@ watch(
 }
 
 .tab {
-  padding: 8px 16px;
+  padding: 8px 12px;
   margin: 6px;
   cursor: pointer;
   color: var(--main-color);
@@ -120,6 +140,11 @@ watch(
   background-color: var(--secondary-color);
   /* font-weight: bold; */
   opacity: 0.8;
+}
+
+.tab.activated {
+  background-color: var(--secondary-color);
+  font-weight: bold;
 }
 
 .scroll-btn {
