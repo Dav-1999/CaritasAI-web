@@ -1,10 +1,16 @@
 <template>
   <div class="subject-container">
     <header>
-      <TabLayout :tabs="pageData.subjectTextList" @tab-selected="hanldeSwitchSubject" />
-      <button class="toggle-btn" @click="subproblem_list_collasped = !subproblem_list_collasped">
+      <div class="tabLayout">
+
+        <NavLayout class="subjectTabLayout" :items="pageData.subjectList.map((item: Subject)=> item.name)" @nav-selected="hanldeSwitchSubject" />
+        <TabLayout v-if="needRefreshComp" style="font-size: 14px;" class="subproblemTabLayout" :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)"
+          @tab-selected="hanldeSwitchSubproblem" />
+
+      </div>
+      <!-- <button class="toggle-btn" @click="subproblem_list_collasped = !subproblem_list_collasped">
         <i class="bi bi-list-ul" style="margin-right: 10px;font-size: 20px;"></i>
-      </button>
+      </button> -->
     </header>
 
     <main>
@@ -33,10 +39,6 @@
         </div>
 
       </article>
-      <aside :style="{ display: subproblem_list_collasped ? 'none' : 'flex' }">
-        <TabLayout class="subproblem-list" v-if="needRefreshComp" :is-vertical="true"
-          :tabs="pageData.subproblemList.map(item => item.name + ' | ' + item.articleCount)" @tab-selected="hanldeSwitchSubproblem" />
-      </aside>
     </main>
   </div>
 </template>
@@ -44,7 +46,7 @@
 <script setup lang="ts">
 import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subject'
 
-const subproblem_list_collasped = ref(true)
+
 const pageData = ref({
   relationCount: 0,
   pageNum: 0,
@@ -57,7 +59,6 @@ const pageData = ref({
   relationList: [] as SSPA_Relation[],
   articleList: [] as Article[],
   subjectList: [] as Subject[],
-  subjectTextList: [] as string[],
   subproblemList: [] as SubProblem[]
 })
 
@@ -131,9 +132,6 @@ onMounted(async () => {
   const [relationCount, subjectList] = await Promise.all([getRelationCount(), getSubjectList()])
   pageData.value.relationCount = relationCount
   pageData.value.subjectList = subjectList;
-  pageData.value.subjectTextList = pageData.value.subjectList
-    .map((item: Subject) => item.name)
-    .filter((name): name is string => name !== null);
   pageData.value.subproblemList = pageData.value.subjectList[0].subProblemList;
   pageData.value.isCanLoadMore = true;
   reset();
@@ -144,34 +142,57 @@ onMounted(async () => {
 <style scoped>
 @import url('../styles/subject.css');
 
+
+
+
 .subject-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* 定义往下使用的变量 */
+  --header-height: 128px;
+  --content-width: 1280px;
+  --real-width: calc(var(--content-width) * 0.52);
+  --hight-light-color: #F2AB5E;
+  /* 覆盖顶层背景色 */
+  background-color: #FEFBF8;
+  /* 不同屏幕尺寸下修改变量 */
+  @media (max-width: 768px) {
+    --header-height: 64px;
+    --content-width: 100%;
+  }
+
 }
 
 header {
   display: flex;
   justify-content: space-between;
-  padding: 0 24px;
-  height: 64px;
+  padding: 0 16px;
+  height: var(--header-height);
+}
+
+.tabLayout {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  >*{
+    max-width: var(--real-width);
+  }
 }
 
 main {
   display: flex;
   flex: 1;
+  max-width: var(--content-width);
+  margin: 0 auto;
 }
 
 article {
   flex: 4;
-  max-height: calc(100vh - 64px);
+  max-height: calc(100vh - var(--header-height));
   overflow-y: auto;
-  /* background-color: azure; */
-
-  /* 隐藏滚动条 */
-  /* &::-webkit-scrollbar {
-    display: none;
-  } */
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -182,26 +203,15 @@ article {
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #008080;
+    background-color: var(--hight-light-color);
     border-radius: 10px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
 }
 
-aside {
-  flex: 1;
-  background-color: #DEEBE9;
-}
-
-.subproblem-list {
-  width: 100%;
-}
-
 .toggle-btn {
   background-color: transparent;
   border: none;
-  font-size: 20px;
-  margin-right: 10px;
 }
 </style>

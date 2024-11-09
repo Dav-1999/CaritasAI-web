@@ -1,13 +1,22 @@
 <template>
-  <div :class="['tab-container', isVertical ? 'vertical' : 'horizontal']">
-    <div v-for="(tab, index) in tabs" :key="index" :class="['tab', { selected: selectedIdx === index }]"
-      @click="selectTab(index)">
-      {{ tab }}
+  <div class="tab-wrapper" ref="tabWrapper">
+    <button v-if="showLeftButton" class="scroll-btn left" @click="scrollTabs('left')">❮</button>
+    <div :class="['tab-container', isVertical ? 'vertical' : 'horizontal']" ref="tabContainer">
+      <div
+        v-for="(tab, index) in tabs"
+        :key="index"
+        :class="['tab', { selected: selectedIdx === index }]"
+        @click="selectTab(index)"
+      >
+        {{ tab }}
+      </div>
     </div>
+    <button v-if="showRightButton" class="scroll-btn right" @click="scrollTabs('right')">❯</button>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ref, onMounted, watch } from 'vue';
 
 const props = defineProps({
   isVertical: {
@@ -21,72 +30,112 @@ const props = defineProps({
   selctedIndex: {
     type: Number,
     default: 0,
-  }
+  },
 });
 
 const selectedIdx = ref(props.selctedIndex);
+const showLeftButton = ref(false);
+const showRightButton = ref(false);
+const tabWrapper = ref(null);
+const tabContainer = ref(null);
 
-// 定义 emit 事件
 const emit = defineEmits<{
   (e: 'tab-selected', index: number): void;
 }>();
 
-
 const selectTab = (index: number) => {
   selectedIdx.value = index;
-  emit('tab-selected', index); // 发出选中事件
+  emit('tab-selected', index);
 };
+
+// 滚动函数
+const scrollTabs = (direction: 'left' | 'right') => {
+  const container = tabContainer.value as unknown as HTMLElement;
+  const scrollAmount = 100; // 每次滚动的像素值
+  if (direction === 'left') {
+    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+  } else {
+    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  }
+  updateButtonVisibility();
+};
+
+// 检查溢出并更新按钮的可见性
+const updateButtonVisibility = () => {
+  const container = tabContainer.value as unknown as HTMLElement;
+  showLeftButton.value = container.scrollLeft > 0;
+  showRightButton.value = container.scrollLeft + container.clientWidth < container.scrollWidth;
+};
+
+onMounted(() => {
+  updateButtonVisibility();
+  // 监听窗口大小变化以重新计算按钮的显示
+  window.addEventListener('resize', updateButtonVisibility);
+});
+
+watch(
+  () => props.tabs,
+  () => {
+    updateButtonVisibility();
+  }
+);
 </script>
 
 <style scoped>
+.tab-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  max-width: 70vw; /* 避免超出屏幕 */
+
+}
+
 .tab-container {
   display: flex;
   align-items: center;
+  --main-color: #49241A;
+  --secondary-color: #FAE6CC;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex: 1;
+  scrollbar-width: none; /* 隐藏滚动条 */
+}
 
-  /* 允许水平布局时自动换行 */
-  &.horizontal {
-    flex-direction: row;
-    flex-wrap: wrap;
-    overflow-x: auto;
-  }
-
-  /* 允许垂直布局时自动滚动 */
-  &.vertical {
-    flex-direction: column;
-    overflow-y: auto;
-    max-height: 80vh;
-  }
-
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    border-radius: 10px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: #008080;
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
+.tab-container::-webkit-scrollbar {
+  display: none; /* 隐藏滚动条 */
 }
 
 .tab {
   padding: 8px 16px;
-  margin: 5px;
+  margin: 6px;
   cursor: pointer;
-  color: #20545e;
+  color: var(--main-color);
   border-radius: 4px;
   height: 20px;
-  font-weight: bold;
-  transition: background-color 0.3s, font-weight 0.3s, opacity 0.3s;
+  font-weight: normal;
+  transition: background-color 0.8s, font-weight 0.5s, opacity 0.3s;
 }
 
 .tab.selected {
-  background-color: #e0f3f5;
-  font-weight: normal;
+  background-color: var(--secondary-color);
+  /* font-weight: bold; */
   opacity: 0.8;
+}
+
+.scroll-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  user-select: none;
+  padding: 0 8px;
+}
+
+.scroll-btn.left {
+  margin-right: -4px;
+}
+
+.scroll-btn.right {
+  margin-left: -4px;
 }
 </style>

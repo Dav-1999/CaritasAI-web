@@ -92,13 +92,12 @@ watch(
 .nav-container {
   display: flex;
   align-items: center;
-  --main-color: #F1B06C;
-  --secondary-color: #4A261C;
+  --main-color: #6D4F47;
+  --secondary-color: #FAE6CC;
   overflow-x: auto;
   white-space: nowrap;
   flex: 1;
   scrollbar-width: none; /* 隐藏滚动条 */
-  max-width: 70vw; /* 设置最大宽度，防止溢出屏幕 */
 }
 
 .nav-container::-webkit-scrollbar {
@@ -109,27 +108,29 @@ watch(
   padding: 8px 16px;
   margin: 5px;
   cursor: pointer;
-  color: var(--secondary-color);
-  font-weight: normal;
+  color: var(--main-color);
+  font-weight: bold;
   transition: color 0.3s, font-weight 0.3s;
   position: relative;
 }
 
 .nav-item.selected {
   color: var(--main-color);
+  font-weight: normal;
+  background-color: var(--secondary-color);
   font-weight: bold;
 }
 
-.nav-item.selected::after {
+/* .nav-item.selected::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -4px; /* 与文本有些距离 */
+  bottom: -4px;
   height: 3px;
-  background-color: var(--main-color); /* 主题色横线 */
+  background-color: var(--main-color);
   border-radius: 2px;
-}
+} */
 
 .scroll-btn {
   background: transparent;
