@@ -128,22 +128,21 @@ const handleSwitchSubject = (index: number) => {
   resetPageData(); // 重置分页数据
   // 滚动到顶部
   scrollToTop();
-  // 加载新主题的文章
-  loadMoreArticles();
-};
-
-// 获取所有子问题的文章
-const handleGetSubProblemAll = () => {
-  pageData.value.subproblemId = -1;
-  resetPageData(); // 重置分页数据
-  // 滚动到顶部
-  scrollToTop();
-  loadMoreArticles();
+  // 不再调用 loadMoreArticles();
 };
 
 // 切换子问题
 const handleSwitchSubproblem = (index: number) => {
   pageData.value.subproblemId = pageData.value.subproblemList[index].id;
+  resetPageData(); // 重置分页数据
+  // 滚动到顶部
+  scrollToTop();
+  // 不再调用 loadMoreArticles();
+};
+
+// 获取所有子问题的文章
+const handleGetSubProblemAll = () => {
+  pageData.value.subproblemId = -1;
   resetPageData(); // 重置分页数据
   // 滚动到顶部
   scrollToTop();
@@ -208,7 +207,7 @@ onMounted(async () => {
 
   /* 不同屏幕尺寸下修改变量 */
   @media (max-width: 768px) {
-    --content-width: 360px;
+    --content-width: 320px;
   }
 }
 
