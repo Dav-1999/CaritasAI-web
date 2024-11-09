@@ -3,22 +3,12 @@
     <header>
       <div class="tabLayout">
         <!-- 主题导航栏 -->
-        <NavLayout
-          class="subjectTabLayout"
-          :items="pageData.subjectList.map((item: Subject) => item.name)"
-          @nav-selected="handleSwitchSubject"
-        />
-        <!-- 子问题标签栏 -->
-        <TabLayout
-          v-if="needRefreshComp"
-          style="font-size: 14px;"
-          class="subproblemTabLayout"
-          :has-set-all="true"
-          :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)"
-          @tab-selected="handleSwitchSubproblem"
-          @select-all="handleGetSubProblemAll"
-          :selected-index="-1"
-        />
+        <NavLayout class="subjectTabLayout" :items="pageData.subjectList.map((item: Subject) => item.name)"
+          @nav-selected="handleSwitchSubject" />
+        <!-- 子问题标签栏，使用 :key 强制刷新 -->
+        <TabLayout :key="pageData.subjectId" style="font-size: 14px;" class="subproblemTabLayout" :has-set-all="true"
+          :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)" @tab-selected="handleSwitchSubproblem"
+          @select-all="handleGetSubProblemAll" :selected-index="-1" />
       </div>
     </header>
 
@@ -26,20 +16,12 @@
       <article ref="listContainer">
         <div class="article-container">
           <!-- 文章卡片列表 -->
-          <div
-            class="card"
-            v-for="article in pageData.articleList"
-            :key="article.id"
-            @click="handleArticleJump(article)"
-          >
-            <img
-              class="cover"
-              :src="'https://cdn.caritas.pro/image/' + article.id + '.jpg'"
-              alt="cover"
-            />
+          <div class="card" v-for="article in pageData.articleList" :key="article.id"
+            @click="handleArticleJump(article)">
+            <img class="cover" :src="'https://cdn.caritas.pro/image/' + article.id + '.jpg'" alt="cover" />
             <div class="desp">
               <p class="title">#{{ article.title }}#</p>
-              <!-- 使用自定义方法处理 Markdown 内容 -->
+              <!-- 渲染处理后的 Markdown 内容 -->
               <div class="content">{{ renderMarkdown(article.content?.slice(0, 140) + '……') }}</div>
               <div class="meta">
                 <span>{{ article.author }}</span>
@@ -61,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, watch } from 'vue';
 import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subject';
 
 // 页面数据状态管理
@@ -78,17 +61,13 @@ const pageData = ref({
   currentRequestId: 0,  // 当前请求的ID，用于防止脏读
 });
 
-const needRefreshComp = ref(true); // 是否需要刷新组件
-
 const listContainer = ref<HTMLElement | null>(null); // 列表容器引用
+
 
 // 加载更多文章的方法
 const loadMoreArticles = async () => {
-  // 增加请求ID，用于追踪最新请求
-  const requestId = ++pageData.value.currentRequestId;
-
   // 防止重复加载
-  if (pageData.value.isLoading || pageData.value.isLoadEnd) {
+  if (pageData.value.isLoading) {
     return;
   }
   pageData.value.isLoading = true;
@@ -102,10 +81,6 @@ const loadMoreArticles = async () => {
     if (relationList.length === 0) {
       pageData.value.isLoadEnd = true; // 没有更多数据，设置加载结束
     } else {
-      // 检查请求ID，防止脏读
-      if (requestId !== pageData.value.currentRequestId) {
-        return;
-      }
       // 并行获取文章内容
       const articlePromises = relationList.map((item: SSPA_Relation) =>
         getArticle(item.articleId)
@@ -120,19 +95,25 @@ const loadMoreArticles = async () => {
     pageData.value.isLoading = false; // 重置加载状态
   }
 };
-
-// 使用无限滚动
-useInfiniteScroll(
+// 初始化无限滚动的方法
+const { reset } = useInfiniteScroll(
   listContainer,
   loadMoreArticles,
   {
-    distance: 800, // 触发加载的距离
-    interval: 200, // 加载间隔
-    direction: 'bottom', // 滚动方向
-    // 判断是否可以加载更多
+    distance: 800,
+    interval: 200,
+    direction: 'bottom',
     canLoadMore: () => !pageData.value.isLoadEnd && !pageData.value.isLoading,
   }
 );
+
+
+// 监听子问题ID的变化，重新初始化无限滚动
+watch(() => pageData.value.subproblemId, () => {
+  // 停止之前的无限滚动监听
+  resetPageData();
+  reset();
+});
 
 // 处理文章点击跳转
 const handleArticleJump = (article: Article) => {
@@ -145,7 +126,6 @@ const handleSwitchSubject = (index: number) => {
   pageData.value.subproblemList = pageData.value.subjectList[index].subProblemList;
   pageData.value.subproblemId = -1; // 重置子问题ID
   resetPageData(); // 重置分页数据
-  refreshComponent();
   // 滚动到顶部
   scrollToTop();
   // 加载新主题的文章
@@ -175,15 +155,8 @@ const resetPageData = () => {
   pageData.value.pageNum = 0;
   pageData.value.articleList = [];
   pageData.value.isLoadEnd = false;
+  pageData.value.isLoading = false; // 重置加载状态
   pageData.value.currentRequestId = 0;
-};
-
-// 刷新组件，确保子问题标签栏更新
-const refreshComponent = () => {
-  needRefreshComp.value = false;
-  setTimeout(() => {
-    needRefreshComp.value = true;
-  }, 0);
 };
 
 // 滚动到顶部的方法
@@ -204,11 +177,12 @@ const renderMarkdown = (content: string) => {
 
 // 组件挂载时初始化数据
 onMounted(async () => {
+  // 并行获取关系总数和主题列表
   const [relationCount, subjectList] = await Promise.all([getRelationCount(), getSubjectList()]);
   pageData.value.relationCount = relationCount;
   pageData.value.subjectList = subjectList;
-  pageData.value.subjectId = subjectList[0].id;
-  pageData.value.subproblemList = subjectList[0].subProblemList;
+  pageData.value.subjectId = subjectList[0].id; // 默认选中第一个主题
+  pageData.value.subproblemList = subjectList[0].subProblemList; // 初始化子问题列表
   pageData.value.subproblemId = -1; // 默认显示全部子问题
   resetPageData(); // 重置分页数据
   // 加载初始的文章列表
@@ -234,7 +208,7 @@ onMounted(async () => {
 
   /* 不同屏幕尺寸下修改变量 */
   @media (max-width: 768px) {
-    --content-width: 420px;
+    --content-width: 360px;
   }
 }
 
@@ -252,7 +226,7 @@ header {
   align-items: center;
   flex-direction: column;
 
-  > * {
+  >* {
     max-width: var(--content-width);
   }
 }
@@ -296,8 +270,10 @@ article {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  line-clamp: 5; /* 显示行数 */
-  -webkit-line-clamp: 5; /* 显示行数 */
+  line-clamp: 5;
+  /* 显示行数 */
+  -webkit-line-clamp: 5;
+  /* 显示行数 */
   -webkit-box-orient: vertical;
 }
 </style>
