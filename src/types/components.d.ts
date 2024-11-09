@@ -14,6 +14,7 @@ declare module 'vue' {
     ChatShow: typeof import('./../components/ChatShow.vue')['default']
     CounterComp: typeof import('./../components/CounterComp.vue')['default']
     InputComponent: typeof import('./../components/InputComponent.vue')['default']
+    NavLayout: typeof import('./../components/NavLayout.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SearchTerms: typeof import('./../components/SearchTerms.vue')['default']
