@@ -63,6 +63,10 @@ const scrollNav = (direction: 'left' | 'right') => {
 // 检查溢出并更新按钮的可见性
 const updateButtonVisibility = () => {
   const container = navContainer.value as unknown as HTMLElement;
+  if (!container) return;
+  if (!container.scrollLeft) {
+    showLeftButton.value = false;
+  }
   showLeftButton.value = container.scrollLeft > 0;
   showRightButton.value = container.scrollLeft + container.clientWidth < container.scrollWidth;
 };

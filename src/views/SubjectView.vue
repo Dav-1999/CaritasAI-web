@@ -2,148 +2,225 @@
   <div class="subject-container">
     <header>
       <div class="tabLayout">
-
-        <NavLayout class="subjectTabLayout" :items="pageData.subjectList.map((item: Subject)=> item.name)" @nav-selected="hanldeSwitchSubject" />
-        <TabLayout v-if="needRefreshComp" style="font-size: 14px;" class="subproblemTabLayout" :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)"
-          @tab-selected="hanldeSwitchSubproblem" />
-
+        <!-- 主题导航栏 -->
+        <NavLayout
+          class="subjectTabLayout"
+          :items="pageData.subjectList.map((item: Subject) => item.name)"
+          @nav-selected="handleSwitchSubject"
+        />
+        <!-- 子问题标签栏 -->
+        <TabLayout
+          v-if="needRefreshComp"
+          style="font-size: 14px;"
+          class="subproblemTabLayout"
+          :has-set-all="true"
+          :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)"
+          @tab-selected="handleSwitchSubproblem"
+          @select-all="handleGetSubProblemAll"
+          :selected-index="-1"
+        />
       </div>
-      <!-- <button class="toggle-btn" @click="subproblem_list_collasped = !subproblem_list_collasped">
-        <i class="bi bi-list-ul" style="margin-right: 10px;font-size: 20px;"></i>
-      </button> -->
     </header>
 
     <main>
       <article ref="listContainer">
         <div class="article-container">
-          <div class="card" v-for="article in pageData.articleList" :key="article.id"
-            @click="handleArticleJump(article)">
-
-            <img class="cover" :src="'https://cdn.caritas.pro/image/' + article.id + '.jpg'" alt="cover" />
+          <!-- 文章卡片列表 -->
+          <div
+            class="card"
+            v-for="article in pageData.articleList"
+            :key="article.id"
+            @click="handleArticleJump(article)"
+          >
+            <img
+              class="cover"
+              :src="'https://cdn.caritas.pro/image/' + article.id + '.jpg'"
+              alt="cover"
+            />
             <div class="desp">
               <p class="title">#{{ article.title }}#</p>
-              <p class="content">{{ article.content?.slice(0, 140) }}……</p>
+              <!-- 使用自定义方法处理 Markdown 内容 -->
+              <div class="content">{{ renderMarkdown(article.content?.slice(0, 140) + '……') }}</div>
               <div class="meta">
                 <span>{{ article.author }}</span>
                 <span>{{ article.lastUpdate }}</span>
               </div>
             </div>
-
           </div>
         </div>
+        <!-- 没有更多内容时的提示 -->
         <div class="empty" v-if="pageData.isLoadEnd">
           <br />
           ---总该有条底线吧---
           <br />
           <br />
         </div>
-
       </article>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subject'
+import { ref, onMounted, nextTick } from 'vue';
+import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subject';
 
-
+// 页面数据状态管理
 const pageData = ref({
-  relationCount: 0,
-  pageNum: 0,
-  pageSize: 4,
-  subjectId: 1,
-  subproblemId: 9132,
-  subproblemIdx: 0,
-  isLoadEnd: false,
-  isCanLoadMore: false,
-  relationList: [] as SSPA_Relation[],
-  articleList: [] as Article[],
-  subjectList: [] as Subject[],
-  subproblemList: [] as SubProblem[]
-})
+  relationCount: 0, // 关系总数
+  pageNum: 0,       // 当前页码
+  pageSize: 5,      // 每页大小
+  subjectId: -1,    // 当前主题ID
+  subproblemId: -1, // 当前子问题ID
+  isLoadEnd: false,     // 是否已加载完所有内容
+  isLoading: false,     // 是否正在加载
+  articleList: [] as Article[],        // 文章列表
+  subjectList: [] as Subject[],        // 主题列表
+  subproblemList: [] as SubProblem[],  // 子问题列表
+  currentRequestId: 0,  // 当前请求的ID，用于防止脏读
+});
 
-const needRefreshComp = ref(true)
+const needRefreshComp = ref(true); // 是否需要刷新组件
 
+const listContainer = ref<HTMLElement | null>(null); // 列表容器引用
 
-const listContainer = ref<HTMLElement | null>(null)
-const { reset } = useInfiniteScroll(listContainer,
-  async () => {
+// 加载更多文章的方法
+const loadMoreArticles = async () => {
+  // 增加请求ID，用于追踪最新请求
+  const requestId = ++pageData.value.currentRequestId;
 
-    const { pageNum: pn, pageSize: ps, subjectId, subproblemId } = pageData.value
+  // 防止重复加载
+  if (pageData.value.isLoading || pageData.value.isLoadEnd) {
+    return;
+  }
+  pageData.value.isLoading = true;
 
-    const relationList = await getRelationList(pn, ps, subjectId, subproblemId)
+  const { pageNum: pn, pageSize: ps, subjectId, subproblemId } = pageData.value;
+  console.log('加载页码:', pn, '页面大小:', ps, '主题ID:', subjectId, '子问题ID:', subproblemId);
+
+  try {
+    // 获取关系列表
+    const relationList = await getRelationList(pn, ps, subjectId, subproblemId);
     if (relationList.length === 0) {
-      pageData.value.isLoadEnd = true
+      pageData.value.isLoadEnd = true; // 没有更多数据，设置加载结束
+    } else {
+      // 检查请求ID，防止脏读
+      if (requestId !== pageData.value.currentRequestId) {
+        return;
+      }
+      // 并行获取文章内容
+      const articlePromises = relationList.map((item: SSPA_Relation) =>
+        getArticle(item.articleId)
+      );
+      const articles = await Promise.all(articlePromises);
+      pageData.value.articleList.push(...articles);
+      pageData.value.pageNum++;
     }
-    pageData.value.relationList = relationList
-    relationList.forEach(async (item: SSPA_Relation) => {
-      pageData.value.articleList.push(await getArticle(item.articleId))
-    })
+  } catch (error) {
+    console.error('加载文章出错:', error);
+  } finally {
+    pageData.value.isLoading = false; // 重置加载状态
+  }
+};
 
-    pageData.value.pageNum += 1
-  },
+// 使用无限滚动
+const { pause, resume } = useInfiniteScroll(
+  listContainer,
+  loadMoreArticles,
   {
-    distance: 600,
-    interval: 200,
-    direction: 'bottom',
-    canLoadMore: () => pageData.value.isCanLoadMore,
-  },
-)
+    distance: 800, // 触发加载的距离
+    interval: 200, // 加载间隔
+    direction: 'bottom', // 滚动方向
+    // 判断是否可以加载更多
+    canLoadMore: () => !pageData.value.isLoadEnd && !pageData.value.isLoading,
+  }
+);
 
+// 处理文章点击跳转
 const handleArticleJump = (article: Article) => {
-  // open link with id in new tab in background
-  window.open(`https://api.caritas.pro/article/${article.id}`, '_blank')
-}
+  window.open(`https://api.caritas.pro/article/${article.id}`, '_blank');
+};
 
-const hanldeSwitchSubject = (index: number) => {
-
+// 切换主题
+const handleSwitchSubject = (index: number) => {
   pageData.value.subjectId = pageData.value.subjectList[index].id;
   pageData.value.subproblemList = pageData.value.subjectList[index].subProblemList;
-  pageData.value.subproblemId = pageData.value.subproblemList[0].id;
-  pageData.value.pageNum = 0;
-  pageData.value.articleList = [];
-  pageData.value.isCanLoadMore = true;
-  pageData.value.isLoadEnd = false;
+  pageData.value.subproblemId = -1; // 重置子问题ID
+  resetPageData(); // 重置分页数据
   refreshComponent();
-  reset();
-}
+  // 滚动到顶部
+  scrollToTop();
+  // 加载新主题的文章
+  loadMoreArticles();
+};
 
-const hanldeSwitchSubproblem = (index: number) => {
+// 获取所有子问题的文章
+const handleGetSubProblemAll = () => {
+  pageData.value.subproblemId = -1;
+  resetPageData(); // 重置分页数据
+  // 滚动到顶部
+  scrollToTop();
+  loadMoreArticles();
+};
+
+// 切换子问题
+const handleSwitchSubproblem = (index: number) => {
   pageData.value.subproblemId = pageData.value.subproblemList[index].id;
+  resetPageData(); // 重置分页数据
+  // 滚动到顶部
+  scrollToTop();
+  loadMoreArticles();
+};
+
+// 重置分页数据的方法
+const resetPageData = () => {
   pageData.value.pageNum = 0;
   pageData.value.articleList = [];
-  pageData.value.isCanLoadMore = true;
   pageData.value.isLoadEnd = false;
-  reset();
-}
+  pageData.value.currentRequestId = 0;
+};
 
+// 刷新组件，确保子问题标签栏更新
 const refreshComponent = () => {
   needRefreshComp.value = false;
   setTimeout(() => {
     needRefreshComp.value = true;
-  }, 0); // 使用短暂的延迟来确保重新渲染
+  }, 0);
 };
 
-// const loadSubproblem = async (subjectId: number) => {
-//   pageData.value.subproblemList = await getSubProblemList(subjectId)
-// }
+// 滚动到顶部的方法
+const scrollToTop = () => {
+  if (listContainer.value) {
+    listContainer.value.scrollTop = 0;
+  }
+};
 
+// 解析 Markdown 内容的方法（简单处理）
+const renderMarkdown = (content: string) => {
+  // 正则匹配 Markdown 内容中的图片为 [图片]
+  return content.replace(/!\[.*?\]\(.*?\)/g, '[图片]')
+    .replace(/\[.*?\]\(.*?\)/g, '') // 去除 Markdown 链接
+    .replace(/#+\s/g, '') // 去除 Markdown 标题
+    .replace(/\*\*.*?\*\*/g, ''); // 去除加粗
+};
+
+// 组件挂载时初始化数据
 onMounted(async () => {
-  const [relationCount, subjectList] = await Promise.all([getRelationCount(), getSubjectList()])
-  pageData.value.relationCount = relationCount
+  const [relationCount, subjectList] = await Promise.all([getRelationCount(), getSubjectList()]);
+  pageData.value.relationCount = relationCount;
   pageData.value.subjectList = subjectList;
-  pageData.value.subproblemList = pageData.value.subjectList[0].subProblemList;
-  pageData.value.isCanLoadMore = true;
-  reset();
-})
-
+  pageData.value.subjectId = subjectList[0].id;
+  pageData.value.subproblemList = subjectList[0].subProblemList;
+  pageData.value.subproblemId = -1; // 默认显示全部子问题
+  resetPageData(); // 重置分页数据
+  // 加载初始的文章列表
+  loadMoreArticles();
+});
 </script>
 
 <style scoped>
 @import url('../styles/subject.css');
 
-
-
+/* 保持原始样式 */
 
 .subject-container {
   display: flex;
@@ -155,11 +232,11 @@ onMounted(async () => {
   --hight-light-color: #F2AB5E;
   /* 覆盖顶层背景色 */
   background-color: #FEFBF8;
+
   /* 不同屏幕尺寸下修改变量 */
   @media (max-width: 768px) {
     --content-width: 420px;
   }
-
 }
 
 header {
@@ -175,7 +252,8 @@ header {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  >*{
+
+  > * {
     max-width: var(--content-width);
   }
 }
@@ -190,7 +268,6 @@ main {
 
 article {
   flex: 4;
-
   max-height: calc(100vh - var(--header-height));
   overflow-y: auto;
 
@@ -213,5 +290,15 @@ article {
 .toggle-btn {
   background-color: transparent;
   border: none;
+}
+
+/* 样式化解析后的 Markdown 内容 */
+.content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  line-clamp: 5; /* 显示行数 */
+  -webkit-line-clamp: 5; /* 显示行数 */
+  -webkit-box-orient: vertical;
 }
 </style>

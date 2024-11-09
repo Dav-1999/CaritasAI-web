@@ -38,8 +38,8 @@ export const getRelationList = async (
   if (subproblemId != -1) {
     suffix += `&subproblemId=${subproblemId}`
   }
-  const { data } = await clientFetch<ResponseData>(
-    `/subjectSubProblemArticle/getSubjectSubProblemArticleList?pageNum=${pageNum}&pageSize=${pageSize}${suffix}`,
+  const { data } = await useFetch<ResponseData>(
+    `https://api.xqher.cn/subjectSubProblemArticle/getSubjectSubProblemArticleList?pageNum=${pageNum}&pageSize=${pageSize}${suffix}`,
   )
     .get()
     .json()
