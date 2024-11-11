@@ -6,9 +6,9 @@
         <NavLayout class="subjectTabLayout" :items="pageData.subjectList.map((item: Subject) => item.name)"
           @nav-selected="handleSwitchSubject" />
         <!-- 子问题标签栏，使用 :key 强制刷新 -->
-        <TabLayout v-if="waitRefreshComp" :key="pageData.subjectId" style="font-size: 14px;" class="subproblemTabLayout" :has-set-all="true"
-          :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)" @tab-selected="handleSwitchSubproblem"
-          @select-all="handleGetSubProblemAll" :selected-index="-1" />
+        <TabLayout v-if="waitRefreshComp" :key="pageData.subjectId" style="font-size: 14px;" class="subproblemTabLayout"
+          :has-set-all="true" :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)"
+          @tab-selected="handleSwitchSubproblem" @select-all="handleGetSubProblemAll" :selected-index="-1" />
       </div>
     </header>
 
@@ -45,7 +45,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subject';
-import { log } from 'console';
 
 // 页面数据状态管理
 const pageData = ref({
