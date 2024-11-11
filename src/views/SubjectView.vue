@@ -6,7 +6,7 @@
         <NavLayout class="subjectTabLayout" :items="pageData.subjectList.map((item: Subject) => item.name)"
           @nav-selected="handleSwitchSubject" />
         <!-- 子问题标签栏，使用 :key 强制刷新 -->
-        <TabLayout :key="pageData.subjectId" style="font-size: 14px;" class="subproblemTabLayout" :has-set-all="true"
+        <TabLayout v-if="waitRefreshComp" :key="pageData.subjectId" style="font-size: 14px;" class="subproblemTabLayout" :has-set-all="true"
           :tabs="pageData.subproblemList.map((item: SubProblem) => item.name)" @tab-selected="handleSwitchSubproblem"
           @select-all="handleGetSubProblemAll" :selected-index="-1" />
       </div>
@@ -61,6 +61,7 @@ const pageData = ref({
   currentRequestId: 0,  // 当前请求的ID，用于防止脏读
 });
 
+const waitRefreshComp = ref(true); // 是否需要刷新组件
 const listContainer = ref<HTMLElement | null>(null); // 列表容器引用
 
 
@@ -122,13 +123,19 @@ const handleArticleJump = (article: Article) => {
 
 // 切换主题
 const handleSwitchSubject = (index: number) => {
+  console.log('switch before:', pageData.value.subjectId, pageData.value.subproblemId);
+
   pageData.value.subjectId = pageData.value.subjectList[index].id;
   pageData.value.subproblemList = pageData.value.subjectList[index].subProblemList;
   pageData.value.subproblemId = -1; // 重置子问题ID
+  console.log('switch after:', pageData.value.subjectId, pageData.value.subproblemId);
+
   resetPageData(); // 重置分页数据
+  loadMoreArticles();
+  // 刷新子问题标签栏
+  refreshComp();
   // 滚动到顶部
   scrollToTop();
-  // 不再调用 loadMoreArticles();
 };
 
 // 切换子问题
@@ -147,6 +154,14 @@ const handleGetSubProblemAll = () => {
   // 滚动到顶部
   scrollToTop();
   loadMoreArticles();
+};
+
+// 刷新添加了waitRefreshComp的组件
+const refreshComp = () => {
+  waitRefreshComp.value = !waitRefreshComp.value;
+  setTimeout(() => {
+    waitRefreshComp.value = !waitRefreshComp.value;
+  }, 20);
 };
 
 // 重置分页数据的方法
