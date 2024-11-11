@@ -75,9 +75,10 @@ const loadMoreArticles = async () => {
 
   const { pageNum: pn, pageSize: ps, subjectId, subproblemId } = pageData.value;
   console.log('加载页码:', pn, '页面大小:', ps, '主题ID:', subjectId, '子问题ID:', subproblemId);
-  if (subjectId === -1 && subproblemId === -1) {
-    return;
-  }
+  // 初始化时加会加载一次 -1,-1 奇怪的是拦截之后主页就不会加载更多了
+  // if (subjectId === -1 && subproblemId === -1) {
+  //   return;
+  // }
   try {
     // 获取关系列表
 
