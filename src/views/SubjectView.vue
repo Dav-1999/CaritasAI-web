@@ -133,7 +133,7 @@ const handleSwitchSubject = (index: number) => {
   resetPageData(); // 重置分页数据
   loadMoreArticles();
   // 刷新子问题标签栏
-  refreshComp();
+  // refreshComp();
   // 滚动到顶部
   scrollToTop();
 };
@@ -157,12 +157,12 @@ const handleGetSubProblemAll = () => {
 };
 
 // 刷新添加了waitRefreshComp的组件
-const refreshComp = () => {
-  waitRefreshComp.value = !waitRefreshComp.value;
-  setTimeout(() => {
-    waitRefreshComp.value = !waitRefreshComp.value;
-  }, 20);
-};
+// const refreshComp = () => {
+//   waitRefreshComp.value = !waitRefreshComp.value;
+//   setTimeout(() => {
+//     waitRefreshComp.value = !waitRefreshComp.value;
+//   }, 20);
+// };
 
 // 重置分页数据的方法
 const resetPageData = () => {
