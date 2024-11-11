@@ -32,19 +32,23 @@ export const getRelationList = async (
   subproblemId: number = -1,
 ) => {
   let suffix = ''
+  let prefix = '/subjectSubProblemArticle/getSubjectSubProblemArticleList'
   if (subjectId != -1) {
     suffix += `&subjectId=${subjectId}`
   }
   if (subproblemId != -1) {
     suffix += `&subproblemId=${subproblemId}`
+  } else {
+    prefix = '/subjectSubProblemArticle/getSubjectSubProblemArticleListBySubjectId'
   }
   const { data } = await clientFetch<ResponseData>(
-    `/subjectSubProblemArticle/getSubjectSubProblemArticleList?pageNum=${pageNum}&pageSize=${pageSize}${suffix}`,
+    `${prefix}?pageNum=${pageNum}&pageSize=${pageSize}${suffix}`,
   )
     .get()
     .json()
   return data.value.data
 }
+
 
 export const getSubjectList = async () => {
   const { data } = await clientFetch<ResponseData<Subject>>(

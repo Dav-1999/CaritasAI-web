@@ -45,6 +45,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import type { SSPA_Relation, Subject, Article, SubProblem } from '@/types/subject';
+import { log } from 'console';
 
 // 页面数据状态管理
 const pageData = ref({
@@ -75,10 +76,14 @@ const loadMoreArticles = async () => {
 
   const { pageNum: pn, pageSize: ps, subjectId, subproblemId } = pageData.value;
   console.log('加载页码:', pn, '页面大小:', ps, '主题ID:', subjectId, '子问题ID:', subproblemId);
-
+  if (subjectId === -1 && subproblemId === -1) {
+    return;
+  }
   try {
     // 获取关系列表
+
     const relationList = await getRelationList(pn, ps, subjectId, subproblemId);
+
     if (relationList.length === 0) {
       pageData.value.isLoadEnd = true; // 没有更多数据，设置加载结束
     } else {
@@ -198,6 +203,8 @@ onMounted(async () => {
   pageData.value.subjectId = subjectList[0].id; // 默认选中第一个主题
   pageData.value.subproblemList = subjectList[0].subProblemList; // 初始化子问题列表
   pageData.value.subproblemId = -1; // 默认显示全部子问题
+  console.log('初始加载', pageData.value.subjectId, pageData.value.subproblemId);
+
   resetPageData(); // 重置分页数据
   // 加载初始的文章列表
   loadMoreArticles();
