@@ -155,4 +155,26 @@ onBeforeMount(()=>{
   color: #4CAF50; /* 激活时内容的字体颜色 */
 }
 
+aside {
+
+background: linear-gradient(270deg, #F3C06B, #F3B779, #F4B083, #F4AA8B);
+background-size: 1400% 1400%;
+animation: gradient-animation 12s ease infinite;
+/* 使用 CSS 动画 */
+
+}
+
+@keyframes gradient-animation {
+0% {
+  background-position: 0% 50%;
+}
+
+50% {
+  background-position: 100% 50%;
+}
+
+100% {
+  background-position: 0% 50%;
+}
+}
 </style>

@@ -8,13 +8,16 @@
 
   margin: 0 auto;
   padding: 0 1rem;
-  max-width: 60%;
+  max-width: var(--content-width);
+  --background-color: #FAE6CC;
+  --text-color: #212121;
+  --subtext-color: #646464;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  background-color: #deebe9;
+  background-color: var(--background-color);
   width: 100%;
   margin: 8px;
   transition:
@@ -30,13 +33,13 @@
   }
   .desp {
     margin: 8px;
-    color: #646464;
+    color: var(--subtext-color);
     p {
       margin: 8px 0;
     }
     .title {
       font-size: 18px;
-      color: #20545e;
+      color: var(--text-color);
       text-align: start;
       line-clamp: 1;
       overflow: hidden;
