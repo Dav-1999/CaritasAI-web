@@ -29,9 +29,9 @@ const props = reactive({
   minZoom: 0.01,
   maxZoom: 10,
   initZoom: 0.01,
-  initAlpha: 1,
+  initAlpha: .5,
   initOffsetPos: [600, 300],
-  alphaDecay: 0,
+  alphaDecay: 0.01,
   // force
   linkDistance: 5000,
   linkStrength: 1,
@@ -168,6 +168,11 @@ function loadGraph(graphData: Graph) {
     .alphaDecay(props.alphaDecay)
     .alpha(props.initAlpha)
     .velocityDecay(1 - props.velocityDecay)
+    .on("end", () => {
+      if (props.permanentAnim) {
+        simulation.alpha(props.initAlpha).restart();
+      }
+    })
     .force(
       "link",
       d3
