@@ -8,3 +8,8 @@ export interface Link extends d3.SimulationLinkDatum<Node> {
   source: string | Node;
   target: string | Node;
 }
+
+export interface Graph {
+  nodes: Node[];
+  links: Link[];
+}
