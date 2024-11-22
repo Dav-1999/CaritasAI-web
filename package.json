@@ -16,6 +16,7 @@
     "@vueuse/core": "^11.2.0",
     "axios": "^1.7.7",
     "bootstrap-icons": "^1.11.3",
+    "d3": "^7.9.0",
     "mitt": "^3.0.1",
     "pinia": "^2.2.4",
     "vite-plugin-vue-setup-extend": "^0.4.0",
