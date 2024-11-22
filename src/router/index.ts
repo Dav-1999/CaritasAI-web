@@ -27,6 +27,11 @@ const router = createRouter({
       component: () => import('../views/SubjectView.vue'),
     },
     {
+      path: '/graph',
+      name: 'graph',
+      component: () => import('../views/GraphView.vue'),
+    },
+    {
       path:"/",
       redirect: '/chat/chatBox'
     }
