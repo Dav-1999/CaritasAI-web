@@ -35,15 +35,15 @@ const props = reactive({
   // force
   linkDistance: 5000,
   linkStrength: 1,
-  linkIterations: 4,
+  linkIterations: 1,
   velocityDecay: 0.6,
   // 精度，默认0.9
   chargeTheta: 0.9,
-  chargeStrength: -300,
+  chargeStrength: -3000,
   // 设置节点远离的范围
   chargeDistanceMax: Infinity,
   chargeDistanceMin: 1,
-  enableChargeForce: false,
+  enableChargeForce: true,
   collideRadius: 420,
   collideStrength: 1,
   collideIterations: 1,
@@ -112,11 +112,11 @@ function loadGraph(graphData: Graph) {
 
   // link-size map
   // 提供连接数分级大小表， 方差为108，太大了，按均值5来分5级
-  const getSizeFactor = (linkCount:number) =>{
-      if (linkCount < 5) return linkCount;
-      if (linkCount < 10) return 5;
+  const getSizeFactor = (linkCount: number) => {
+    if (linkCount < 5) return linkCount;
+    if (linkCount < 10) return 5;
 
-      return Math.floor(linkCount / 10) + 1;
+    return Math.floor(linkCount / 10) + 1;
   }
 
   const link = content
@@ -186,21 +186,21 @@ function loadGraph(graphData: Graph) {
       "collide",
       props.enableCollideForce
         ? d3
-            .forceCollide()
-            .radius(props.collideRadius)
-            .strength(props.collideStrength)
-            .iterations(props.collideIterations)
+          .forceCollide()
+          .radius(props.collideRadius)
+          .strength(props.collideStrength)
+          .iterations(props.collideIterations)
         : null
     )
     .force(
       "charge",
       props.enableChargeForce
         ? d3
-            .forceManyBody()
-            .theta(props.chargeTheta)
-            .strength(props.chargeStrength)
-            .distanceMax(props.chargeDistanceMax)
-            .distanceMin(props.chargeDistanceMin)
+          .forceManyBody()
+          .theta(props.chargeTheta)
+          .strength(props.chargeStrength)
+          .distanceMax(props.chargeDistanceMax)
+          .distanceMin(props.chargeDistanceMin)
         : null
     )
     .force(
@@ -253,6 +253,7 @@ aside {
   z-index: 99;
   overflow-y: auto;
 }
+
 .graph-container {
   width: 100%;
   height: 100%;
