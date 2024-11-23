@@ -4,7 +4,19 @@
     <div class="graph-container" ref="graphContainer"></div>
   </main>
   <aside v-if="status.showSidePanel">
-    <div id="side-panel"></div>
+    <div id="side-panel">
+      <h1 id="title">
+      </h1>
+      <!-- 元信息 -->
+      <div id="meta">
+        <!-- 收藏数和阅读数 -->
+        <span id="favorites-count"></span>
+        <span id="read-count"></span>
+      </div>
+      <div id="content">
+
+      </div>
+    </div>
   </aside>
 </template>
 
@@ -284,6 +296,13 @@ function loadGraph(graphData: Graph) {
       node.attr("fill", props.nodeColor).style("opacity", 1); // Reset nodes
       link.style("stroke", props.lineColor).style("stroke-opacity", 0.6); // Reset links
       name.style("opacity", 1); // Reset text
+    })
+    .on("click", function (event, d) {
+      status.showSidePanel = true;
+      const sidePanel = document.getElementById("side-panel");
+      if (sidePanel) {
+        document.getElementById("title")!.innerHTML = `${d.name}`;
+      }
     });
 
 
@@ -422,6 +441,45 @@ aside {
   display: flex;
   z-index: 99;
   overflow-y: auto;
+  background-color: #fafafa;
+  padding: 20px;
+
+  #title {
+    text-align: center;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    a {
+      text-decoration: none;
+      color: #1f1f1f;
+      font-size: 2rem;
+    }
+  }
+
+  #meta {
+    display: flex;
+    justify-content: center;
+  }
+
+  #favorites-count,
+  #read-count {
+    margin: 0 10px;
+    color: #999999;
+  }
+
+  /* 链接设置为主题色 */
+  a {
+    color: #008080;
+  }
+
+  /* blockquote */
+  blockquote {
+    border-left: 5px solid #008080;
+    background-color: #eee;
+    padding: 4px 8px;
+  }
 }
 
 .graph-container {
