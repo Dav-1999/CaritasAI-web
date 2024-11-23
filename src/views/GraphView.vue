@@ -3,19 +3,32 @@
   <main>
     <div class="graph-container" ref="graphContainer"></div>
   </main>
-  <aside v-if="status.showSidePanel">
+  <aside v-if="status.showSidePanel" ref="sidePanelRef">
+    <div id="resize-handle" @mousedown="startResizing"></div>
     <div id="side-panel">
       <h1 id="title">
+        <a :href="articleData.zhihuLink">{{ articleData.title }}</a>
       </h1>
       <!-- 元信息 -->
       <div id="meta">
         <!-- 收藏数和阅读数 -->
-        <span id="favorites-count"></span>
-        <span id="read-count"></span>
+        <span id="favorites-count">收藏数：{{ articleData.favoritesCount }}</span>
+        <span id="read-count">阅读数：{{ articleData.readCount }}</span>
       </div>
-      <div id="content">
-
+      <!-- 关联文章列表 -->
+      <div id="related-articles" v-if="relatedArticles.length">
+        <h2>关联文章</h2>
+        <!-- 标签列表 -->
+        <div class="tag-list" :class="{ 'collapsed': isCollapsed }" ref="tagListRef">
+          <span class="tag" v-for="article in relatedArticles" :key="article.id">
+            <a :href="`https://api.caritas.pro/article/${article.id}`">{{ article.name }}</a>
+          </span>
+        </div>
+        <!-- 折叠/展开按钮 -->
+        <button v-if="showToggleButton" @click="toggleCollapse">{{ isCollapsed ? '展开更多' : '收起' }}</button>
       </div>
+      <!-- 渲染文章内容 -->
+      <div id="content" class="article-content" v-html="articleContent"></div>
     </div>
   </aside>
 </template>
@@ -23,6 +36,7 @@
 
 <script setup lang="ts">
 import * as d3 from 'd3';
+import { marked } from 'marked';
 import type { Node, Link, Graph } from '@/types/graph';
 import graphData from '@/assets/graph-1996.json';
 const props = reactive({
@@ -96,6 +110,68 @@ const status = reactive({
 });
 
 const graphContainer = ref<HTMLElement | null>(null);
+
+const articleData = reactive({
+  title: '',
+  zhihuLink: '',
+  readCount: 0,
+  favoritesCount: 0,
+});
+
+const articleContent = ref('');
+const relatedArticles = ref<Array<{ id: string; name: string }>>([]);
+const sidePanelRef = ref<HTMLElement | null>(null);
+let isResizing = false;
+
+function startResizing() {
+  isResizing = true;
+}
+
+function resizeSidebar(event: MouseEvent) {
+  if (isResizing && sidePanelRef.value) {
+    const newWidth = window.innerWidth - event.clientX;
+    sidePanelRef.value.style.width = `${newWidth}px`;
+  }
+}
+
+function stopResizing() {
+  isResizing = false;
+}
+
+window.addEventListener('mousemove', resizeSidebar);
+window.addEventListener('mouseup', stopResizing);
+
+// 控制标签列表的折叠状态
+const isCollapsed = ref(true);
+// 控制是否显示折叠/展开按钮
+const showToggleButton = ref(false);
+// 引用标签列表的 DOM 元素
+const tagListRef = ref(null);
+
+// 切换折叠状态的方法
+function toggleCollapse() {
+  isCollapsed.value = !isCollapsed.value;
+}
+
+// 检测标签列表是否溢出的方法
+function checkTagsOverflow() {
+  if (tagListRef.value) {
+    const el = tagListRef.value as HTMLElement;
+    const maxHeight = 40; // 根据标签大小调整
+    if (el.scrollHeight > maxHeight) {
+      showToggleButton.value = true;
+    } else {
+      showToggleButton.value = false;
+    }
+  }
+}
+
+// 监听 relatedArticles，当其更新时检测是否需要显示折叠按钮
+watch(relatedArticles, () => {
+  nextTick(() => {
+    checkTagsOverflow();
+  });
+});
 
 setInterval(() => {
 
@@ -297,11 +373,47 @@ function loadGraph(graphData: Graph) {
       link.style("stroke", props.lineColor).style("stroke-opacity", 0.6); // Reset links
       name.style("opacity", 1); // Reset text
     })
-    .on("click", function (event, d) {
-      status.showSidePanel = true;
-      const sidePanel = document.getElementById("side-panel");
-      if (sidePanel) {
-        document.getElementById("title")!.innerHTML = `${d.name}`;
+    .on("click", async function (event, d) {
+      try {
+        const response = await fetch('https://api.xqher.cn/article/getArticleById?id=' + d.id);
+        const data = await response.json();
+        const article = data.data;
+        const {
+          title, question, zhihuLink, content, readCount, favoritesCount, links
+        } = article;
+
+        // 更新文章数据
+        articleData.title = title || question;
+        articleData.zhihuLink = zhihuLink;
+        articleData.readCount = readCount;
+        articleData.favoritesCount = favoritesCount;
+
+        // 解析 Markdown 内容并更新
+        const parsedContent = await marked.parse(content);
+        // 使用 DOM 操作添加类名
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = parsedContent;
+        const linksInContent = tempDiv.querySelectorAll('a');
+        linksInContent.forEach(link => {
+          link.classList.add('article-link');
+        });
+        articleContent.value = tempDiv.innerHTML;
+        // 置顶
+        sidePanelRef.value?.scrollTo(0, 0);
+
+        // 更新关联文章列表
+        relatedArticles.value = links.map((linkName: string) => {
+          const relatedNode = nodes.find((node) => node.name === linkName);
+          return relatedNode
+            ? { id: relatedNode.id, name: relatedNode.name }
+            : { id: '#', name: linkName };
+        });
+
+        // 显示侧栏
+        status.showSidePanel = true;
+      } catch (error) {
+        console.error('Error fetching article:', error);
+        // 处理错误，例如显示提示信息
       }
     });
 
@@ -414,10 +526,18 @@ function reload() {
 }
 
 // 页面尺寸变化时重新加载
-window.addEventListener('resize', reload);
+window.addEventListener('resize', () => {
+  reload();
+  nextTick(() => {
+    checkTagsOverflow();
+  });
+});
 
 onMounted(() => {
   reload();
+  nextTick(() => {
+    checkTagsOverflow();
+  });
 });
 
 </script>
@@ -435,7 +555,7 @@ aside {
   position: fixed;
   top: 0;
   right: 0;
-  width: 300px;
+  width: 330px;
   height: 100vh;
   opacity: .7;
   display: flex;
@@ -469,17 +589,125 @@ aside {
     color: #999999;
   }
 
-  /* 链接设置为主题色 */
-  a {
-    color: #008080;
-  }
+}
 
-  /* blockquote */
-  blockquote {
-    border-left: 5px solid #008080;
-    background-color: #eee;
-    padding: 4px 8px;
-  }
+#resize-handle {
+  position: absolute;
+  top: 0;
+  left: -5px;
+  width: 10px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 100;
+}
+
+/* 关联文章列表样式 */
+#related-articles {
+  margin-top: 20px;
+}
+
+#related-articles h2 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  border-bottom: 2px solid #008080;
+  padding-bottom: 5px;
+}
+
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.article-card {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.article-card a {
+  text-decoration: none;
+  color: #333;
+}
+
+.article-card h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.article-card p {
+  margin: 5px 0 0;
+  color: #666;
+}
+
+.article-card:hover {
+  background-color: #e0f7fa;
+}
+
+.article-card a:hover h3 {
+  text-decoration: underline;
+}
+
+/* 调整 aside 内链接的样式 */
+::v-deep a {
+  color: #008080;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+::v-deep a:hover {
+  color: #005f5f;
+  text-decoration: underline;
+}
+
+/* blockquote */
+blockquote {
+  border-left: 5px solid #008080;
+  background-color: #eee;
+  padding: 4px 8px;
+}
+
+/* 标签列表样式 */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag-list.collapsed {
+  max-height: 40px; /* 调整此值以控制显示的行数 */
+  overflow: hidden;
+}
+
+.tag {
+  background-color: #e0f7fa;
+  color: #00796b;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.9em;
+}
+
+.tag a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.tag a:hover {
+  text-decoration: underline;
+}
+
+/* 折叠/展开按钮样式 */
+#related-articles button {
+  margin-top: 10px;
+  background-color: transparent;
+  border: none;
+  color: #008080;
+  cursor: pointer;
+}
+
+#related-articles button:hover {
+  text-decoration: underline;
 }
 
 .graph-container {
