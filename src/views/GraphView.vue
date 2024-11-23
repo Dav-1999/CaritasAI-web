@@ -3,34 +3,38 @@
   <main>
     <div class="graph-container" ref="graphContainer"></div>
   </main>
-  <aside v-if="status.showSidePanel" ref="sidePanelRef">
-    <div id="resize-handle" @mousedown="startResizing"></div>
-    <div id="side-panel">
-      <h1 id="title">
-        <a :href="articleData.zhihuLink">{{ articleData.title }}</a>
-      </h1>
-      <!-- 元信息 -->
-      <div id="meta">
-        <!-- 收藏数和阅读数 -->
-        <span id="favorites-count">收藏数：{{ articleData.favoritesCount }}</span>
-        <span id="read-count">阅读数：{{ articleData.readCount }}</span>
-      </div>
-      <!-- 关联文章列表 -->
-      <div id="related-articles" v-if="relatedArticles.length">
-        <h2>关联文章</h2>
-        <!-- 标签列表 -->
-        <div class="tag-list" :class="{ 'collapsed': isCollapsed }" ref="tagListRef">
-          <span class="tag" v-for="article in relatedArticles" :key="article.id">
-            <a :href="`https://api.caritas.pro/article/${article.id}`">{{ article.name }}</a>
-          </span>
+  <transition name="side-panel-transition">
+    <aside v-if="status.showSidePanel" ref="sidePanelRef">
+      <div id="resize-handle" @mousedown="startResizing"></div>
+      <div id="side-panel">
+        <h1 id="title">
+          <a :href="articleData.zhihuLink">{{ articleData.title }}</a>
+        </h1>
+        <!-- 元信息 -->
+        <div id="meta">
+          <!-- 收藏数和阅读数 -->
+          <span id="favorites-count">收藏数：{{ articleData.favoritesCount }}</span>
+          <span id="read-count">阅读数：{{ articleData.readCount }}</span>
         </div>
-        <!-- 折叠/展开按钮 -->
-        <button v-if="showToggleButton" @click="toggleCollapse">{{ isCollapsed ? '展开更多' : '收起' }}</button>
+        <!-- 关联文章列表 -->
+        <div id="related-articles" v-if="relatedArticles.length">
+          <h2>关联文章</h2>
+          <!-- 标签列表 -->
+          <div class="tag-list" :class="{ 'collapsed': isCollapsed }" ref="tagListRef">
+            <span class="tag" v-for="article in relatedArticles" :key="article.id">
+              <a :href="`https://api.caritas.pro/article/${article.id}`" @click.prevent="handleContentClick">{{
+                article.name }}</a>
+            </span>
+          </div>
+          <!-- 折叠/展开按钮 -->
+          <button v-if="showToggleButton" @click="toggleCollapse">{{ isCollapsed ? '展开更多' : '收起' }}</button>
+        </div>
+        <!-- 渲染文章内容 -->
+        <div id="content" class="article-content" v-html="articleContent"></div>
       </div>
-      <!-- 渲染文章内容 -->
-      <div id="content" class="article-content" v-html="articleContent"></div>
-    </div>
-  </aside>
+    </aside>
+
+  </transition>
 </template>
 
 
@@ -107,6 +111,8 @@ const status = reactive({
   hoverNode: new Set<Node>(),
   hoverLink: new Set<Link>(),
   hoverName: new Set<Node>(),
+  svg: null as d3.Selection<SVGSVGElement, unknown, null, undefined> | null,
+  zoom: null as d3.ZoomBehavior<SVGSVGElement, unknown> | null,
 });
 
 const graphContainer = ref<HTMLElement | null>(null);
@@ -147,11 +153,170 @@ const isCollapsed = ref(true);
 const showToggleButton = ref(false);
 // 引用标签列表的 DOM 元素
 const tagListRef = ref(null);
+let nodeSelection: d3.Selection<SVGCircleElement, Node, SVGGElement, unknown>;
+let linkSelection: d3.Selection<SVGLineElement, Link, SVGGElement, unknown>;
+let nameSelection: d3.Selection<SVGTextElement, Node, SVGGElement, unknown>;
+
 
 // 切换折叠状态的方法
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value;
 }
+function handleContentClick(event: MouseEvent) {
+  const target = event.currentTarget as HTMLAnchorElement;
+  const href = target.getAttribute('href');
+  if (href && href.startsWith('https://api.caritas.pro/article/')) {
+    event.preventDefault(); // 已经通过 .prevent 修饰符阻止，这里可选
+    // 提取文章 ID
+    const id = href.split('/').pop();
+    if (id) {
+      // 加载文章
+      loadArticleById(id);
+    }
+  }
+}
+async function loadArticleById(id: string) {
+  try {
+    const response = await fetch(`https://api.xqher.cn/article/getArticleById?id=${id}`);
+    const data = await response.json();
+    const article = data.data;
+    const {
+      title,
+      question,
+      zhihuLink,
+      content,
+      readCount,
+      favoritesCount,
+      links,
+    } = article;
+
+    // 更新文章数据
+    articleData.title = title || question;
+    articleData.zhihuLink = zhihuLink;
+    articleData.readCount = readCount;
+    articleData.favoritesCount = favoritesCount;
+
+    // 解析 Markdown 内容并更新
+    const parsedContent = await marked.parse(content);
+    // 使用 DOM 操作为所有链接添加类名
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = parsedContent;
+    const linksInContent = tempDiv.querySelectorAll('a');
+    linksInContent.forEach((link) => {
+      link.classList.add('article-link');
+    });
+    articleContent.value = tempDiv.innerHTML;
+
+    // 更新关联文章列表
+    relatedArticles.value = links.map((linkName: string) => {
+      const relatedNode = (graphData).nodes.find((node) => node.name === linkName);
+      return relatedNode
+        ? { id: relatedNode.id, name: relatedNode.name }
+        : { id: '#', name: linkName };
+    });
+
+    // 显示侧栏
+    status.showSidePanel = true;
+
+    // 在内容更新后，检测是否需要显示折叠按钮
+    nextTick(() => {
+      checkTagsOverflow();
+    });
+
+    // 设置 curNode 指向当前节点，并进入聚焦状态
+    // 设置 curNode 并聚焦节点
+    const currentNode = graphData.nodes.find((node) => node.id === id);
+    if (currentNode) {
+      status.curNode = currentNode;
+      focusOnNode(currentNode);
+    }
+  } catch (error) {
+    console.error('Error fetching article:', error);
+    // 处理错误，例如显示提示信息
+  }
+}
+
+function focusOnNode(node: Node) {
+
+  const svgElement = status.svg;
+  const zoom = status.zoom;
+
+  if (!svgElement || !zoom) {
+    return;
+  }
+
+  // 获取节点的位置
+  const x = node.x || 0;
+  const y = node.y || 0;
+
+  // 设置缩放级别和偏移，使节点居中
+  // const scale = .2; // 根据需要调整缩放级别
+  // 根据节点link_count计算缩放级别
+  const scale = 1 / Math.max(1, Math.log2(node.link_count + 1));
+  const translate = [status.width / 2 - x * scale - props.initOffsetPos[0], status.height / 2 - y * scale ];
+
+  const t = svgElement.transition().duration(750) as unknown as d3.Transition<SVGSVGElement, unknown, SVGSVGElement, unknown>;
+
+  zoom.transform(
+    t,
+    d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+  );
+
+  // 高亮当前节点及其关联节点和链接
+  highlightNodeAndConnections(node);
+  // 设置 dragging 状态为 true
+  status.dragging = true;
+}
+
+function highlightNodeAndConnections(node: Node) {
+  if (!node) return;
+
+  // 重置样式
+  nodeSelection.attr('fill', props.nodeColor).style('opacity', 0.2);
+  linkSelection.style('stroke-opacity', 0.2);
+  nameSelection.style('opacity', 0.2);
+
+  // 高亮当前节点
+  nodeSelection
+    .filter((d) => d.id === node.id)
+    .attr('fill', props.hoverColor)
+    .style('opacity', 1);
+
+  // 高亮关联的链接
+  linkSelection
+    .filter((l) => l.source === node || l.target === node)
+    .style('stroke', props.hoverColor)
+    .style('stroke-opacity', 1);
+
+  // 高亮关联的节点
+  const connectedNodes = new Set<Node>();
+
+  linkSelection
+    .filter((l) => l.source === node || l.target === node)
+    .each((l) => {
+      connectedNodes.add(l.source as Node);
+      connectedNodes.add(l.target as Node);
+    });
+
+  nodeSelection
+    .filter((d) => connectedNodes.has(d))
+    .attr('fill', props.hoverColor)
+    .style('opacity', 1);
+
+  // 高亮节点名称
+  nameSelection
+    .filter((d) => connectedNodes.has(d) || d.id === node.id)
+    .style('opacity', 1);
+}
+function resetHighlighting() {
+  nodeSelection.attr('fill', props.nodeColor).style('opacity', 1);
+  linkSelection.style('stroke', props.lineColor).style('stroke-opacity', 0.6);
+  nameSelection.style('opacity', 1);
+
+  // 清空当前聚焦的节点
+  status.curNode = {} as Node;
+}
+
 
 // 检测标签列表是否溢出的方法
 function checkTagsOverflow() {
@@ -223,9 +388,15 @@ function initGraph(container: HTMLElement | null) {
     .append('svg')
     .attr('width', width)
     .attr('height', height)
-    .style('background-color', props.backgroundColor);
+    .style('background-color', props.backgroundColor)
+    .on('click', () => {
+      // 点击背景时关闭侧边栏
+      status.showSidePanel = false;
+      resetHighlighting();
+    });;
 
   const g = svg.append('g').attr('class', 'zoomable');
+
 
   const zoom = d3
     .zoom<SVGSVGElement, unknown>()
@@ -236,6 +407,11 @@ function initGraph(container: HTMLElement | null) {
 
   svg.call(zoom);
   svg.call(zoom.transform, d3.zoomIdentity.translate(props.initOffsetPos[0], props.initOffsetPos[1]).scale(props.initZoom));
+
+
+  // 存储 svg 和 zoom
+  status.svg = svg;
+  status.zoom = zoom;
 }
 
 function loadGraph(graphData: Graph) {
@@ -245,7 +421,8 @@ function loadGraph(graphData: Graph) {
   const nodes: Node[] = graphData.nodes;
   const links: Link[] = graphData.links;
 
-  const content = d3.select(".zoomable");
+  const content = d3.select<SVGGElement, unknown>(".zoomable");
+
 
   // link-size map
   const degrees = nodes.map(node => node.link_count);
@@ -268,6 +445,11 @@ function loadGraph(graphData: Graph) {
     .attr("class", "link")
     .attr("stroke", props.lineColor)
     .attr("stroke-width", props.linkWidth);
+
+
+  link.on('click', function (event) {
+    event.stopPropagation(); // 如果链接也是可点击的，阻止事件冒泡
+  });
 
   const node = content
     .selectAll<SVGCircleElement, Node>(".node")
@@ -303,6 +485,7 @@ function loadGraph(graphData: Graph) {
         })
     );
 
+
   const name = content
     .selectAll<SVGTextElement, Node>(".name")
     .data(nodes)
@@ -314,107 +497,31 @@ function loadGraph(graphData: Graph) {
     .attr("font-size", (d) => (sizeScale(d.link_count) + 1) * props.textSize)
     .text((d) => d.name);
 
+
+  nodeSelection = node;
+  linkSelection = link;
+  nameSelection = name;
+
   node
     .on("mouseover", function (event, d) {
+
+      event.stopPropagation();
       if (status.dragging) return;
 
-      node.attr("fill", props.nodeColor).style("opacity", 0.2);
-      link.style("stroke-opacity", 0.2);
-      name.style("opacity", 0.2);
-
-      d3.select(this).attr("fill", props.hoverColor).style("opacity", 1);
-      status.hoverNode.add(d);
-      status.curNode = d;
-
-      link
-        .filter((l) => l.source === d || l.target === d)
-        .style("stroke", props.hoverColor)
-        .style("stroke-opacity", 1)
-        .each(function (l) {
-          status.hoverLink.add(l);
-        });
-
-
-      // 高亮连接的节点和对应的标签
-      status.hoverName.clear();
-      // cur name
-      name
-        .filter((t) => t === d)
-        .style("opacity", 1)
-        .each(function (na) {
-          status.hoverName.add(na);
-        });
-      node
-        .filter((n) =>
-          links.some(
-            (l) =>
-              (l.source === d && l.target === n) ||
-              (l.source === n && l.target === d)
-          )
-        )
-        .attr("fill", props.hoverColor)
-        .style("opacity", 1)
-        .each(function (n) {
-          status.hoverNode.add(n);
-
-          name
-            .filter((t) => t === n)
-            .style("opacity", 1)
-            .each(function (na) {
-              status.hoverName.add(na);
-            });
-        });
+      highlightNodeAndConnections(d);
 
       // 关联的文字
     })
-    .on("mouseout", function () {
+    .on("mouseout", function (event) {
+
+      event.stopPropagation();
       if (status.dragging && status.curNode.id) return;
-      node.attr("fill", props.nodeColor).style("opacity", 1); // Reset nodes
-      link.style("stroke", props.lineColor).style("stroke-opacity", 0.6); // Reset links
-      name.style("opacity", 1); // Reset text
+      resetHighlighting();
     })
     .on("click", async function (event, d) {
-      try {
-        const response = await fetch('https://api.xqher.cn/article/getArticleById?id=' + d.id);
-        const data = await response.json();
-        const article = data.data;
-        const {
-          title, question, zhihuLink, content, readCount, favoritesCount, links
-        } = article;
-
-        // 更新文章数据
-        articleData.title = title || question;
-        articleData.zhihuLink = zhihuLink;
-        articleData.readCount = readCount;
-        articleData.favoritesCount = favoritesCount;
-
-        // 解析 Markdown 内容并更新
-        const parsedContent = await marked.parse(content);
-        // 使用 DOM 操作添加类名
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = parsedContent;
-        const linksInContent = tempDiv.querySelectorAll('a');
-        linksInContent.forEach(link => {
-          link.classList.add('article-link');
-        });
-        articleContent.value = tempDiv.innerHTML;
-        // 置顶
-        sidePanelRef.value?.scrollTo(0, 0);
-
-        // 更新关联文章列表
-        relatedArticles.value = links.map((linkName: string) => {
-          const relatedNode = nodes.find((node) => node.name === linkName);
-          return relatedNode
-            ? { id: relatedNode.id, name: relatedNode.name }
-            : { id: '#', name: linkName };
-        });
-
-        // 显示侧栏
-        status.showSidePanel = true;
-      } catch (error) {
-        console.error('Error fetching article:', error);
-        // 处理错误，例如显示提示信息
-      }
+      event.stopPropagation(); // 阻止事件冒泡
+      loadArticleById(d.id);
+      highlightNodeAndConnections(d);
     });
 
 
@@ -676,7 +783,8 @@ blockquote {
 }
 
 .tag-list.collapsed {
-  max-height: 40px; /* 调整此值以控制显示的行数 */
+  max-height: 40px;
+  /* 调整此值以控制显示的行数 */
   overflow: hidden;
 }
 
@@ -708,6 +816,16 @@ blockquote {
 
 #related-articles button:hover {
   text-decoration: underline;
+}
+
+.side-panel-transition-enter-active,
+.side-panel-transition-leave-active {
+  transition: transform 0.3s ease-in-out;
+}
+
+.side-panel-transition-enter-from,
+.side-panel-transition-leave-to {
+  transform: translateX(100%);
 }
 
 .graph-container {
