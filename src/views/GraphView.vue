@@ -29,31 +29,35 @@ const props = reactive({
   minZoom: 0.01,
   maxZoom: 10,
   initZoom: 0.01,
-  initAlpha: .5,
+
+
+  initAlpha: 1,
   initOffsetPos: [600, 300],
-  alphaDecay: 0.01,
+  alphaDecay: 0.02,
   // force
   linkDistance: 5000,
-  linkStrength: 1,
+  linkStrength: .2,
   linkIterations: 1,
   velocityDecay: 0.6,
   // 精度，默认0.9
   chargeTheta: 0.9,
-  chargeStrength: -3000,
+  chargeStrength: -300,
   // 设置节点远离的范围
-  chargeDistanceMax: Infinity,
+  chargeDistanceMax: 3999,
   chargeDistanceMin: 1,
   enableChargeForce: true,
-  collideRadius: 420,
+  collideRadius: 42,
   collideStrength: 1,
   collideIterations: 1,
   enableCollideForce: true,
   centerForceStrength: 1,
-  enableCenterForce: false,
+  enableCenterForce: true,
   // 永久仿真
   permanentAnim: true,
   // 拖拽更新节点
   isDragNeedUpdate: true,
+  // 优化参数，自动计算节点数量，自动调整力的参数
+  animOptimization: false,
 });
 
 const status = reactive({
@@ -159,12 +163,14 @@ function loadGraph(graphData: Graph) {
     .join("text")
     .attr("class", "name")
     .attr("fill", props.textColor)
-    .attr("dy", props.textYOffest)
-    .attr("font-size", props.textSize)
+    .attr("dy", (d) => getSizeFactor(d.link_count) * props.textYOffest)
+    .attr("dx", (d) => -getSizeFactor(d.link_count) * props.textYOffest/8)
+    .attr("font-size", (d) => getSizeFactor(d.link_count) * props.textSize)
     .text((d) => d.name);
 
   const simulation = d3
-    .forceSimulation(nodes)
+    .forceSimulation()
+    .nodes(nodes)
     .alphaDecay(props.alphaDecay)
     .alpha(props.initAlpha)
     .velocityDecay(1 - props.velocityDecay)
@@ -178,8 +184,26 @@ function loadGraph(graphData: Graph) {
       d3
         .forceLink(links)
         .id((d) => { return (d as Node).id; })
-        .distance(props.linkDistance)
-        .strength(props.linkStrength)
+        .distance((d: Link) => {
+          if (props.animOptimization) {
+            const source = d.source as Node;
+            const target = d.target as Node;
+            const degree = Math.max(source.link_count, target.link_count);
+            return props.linkDistance / Math.sqrt(degree + 1); // 高连接度节点距离更短
+          } else {
+            return props.linkDistance;
+          }
+        })
+        .strength((d: Link) => {
+          if (props.animOptimization) {
+            const source = d.source as Node;
+            const target = d.target as Node;
+            const degree = Math.max(source.link_count, target.link_count);
+            return 1 / Math.log2(degree + 2); // 高连接度节点的链接力更弱
+          } else {
+            return props.linkStrength;
+          }
+        })
         .iterations(props.linkIterations)
     )
     .force(
@@ -187,7 +211,16 @@ function loadGraph(graphData: Graph) {
       props.enableCollideForce
         ? d3
           .forceCollide()
-          .radius(props.collideRadius)
+          .radius((d) => {
+            if (props.animOptimization) {
+              const node = d as Node;
+              // 高连接数节点排斥力更强
+              const degree = node.link_count || 1;
+              return props.collideRadius * Math.log2(degree + 2);
+            } else {
+              return props.collideRadius;
+            }
+          })
           .strength(props.collideStrength)
           .iterations(props.collideIterations)
         : null
@@ -198,7 +231,11 @@ function loadGraph(graphData: Graph) {
         ? d3
           .forceManyBody()
           .theta(props.chargeTheta)
-          .strength(props.chargeStrength)
+          .strength((d) => {
+            const node = d as Node;
+            const degree = node.link_count || 1;
+            return props.chargeStrength / Math.sqrt(degree + 1);
+          })
           .distanceMax(props.chargeDistanceMax)
           .distanceMin(props.chargeDistanceMin)
         : null
@@ -226,6 +263,9 @@ function reload() {
   initGraph(graphContainer.value);
   loadGraph(graphData);
 }
+
+// 页面尺寸变化时重新加载
+window.addEventListener('resize', reload);
 
 onMounted(() => {
   reload();
