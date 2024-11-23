@@ -156,8 +156,29 @@ const tagListRef = ref(null);
 let nodeSelection: d3.Selection<SVGCircleElement, Node, SVGGElement, unknown>;
 let linkSelection: d3.Selection<SVGLineElement, Link, SVGGElement, unknown>;
 let nameSelection: d3.Selection<SVGTextElement, Node, SVGGElement, unknown>;
+  function openSidePanel() {
+  if (!status.showSidePanel) {
+    status.showSidePanel = true;
 
+    // Push a new state into the history stack
+    history.pushState({ sidePanelOpen: true }, '', '');
+  }
+}
+function handlePopState(event: PopStateEvent) {
+  if (status.showSidePanel) {
+    // 侧边栏打开时，关闭侧边栏
+    status.showSidePanel = false;
 
+    // 重置高亮状态
+    resetHighlighting();
+
+    // 阻止默认的返回行为
+    event.preventDefault();
+
+    // 因为我们只是改变了应用的状态，不需要真正地回退历史，所以可以再次 pushState
+    history.pushState(null, '', '');
+  }
+}
 // 切换折叠状态的方法
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value;
@@ -215,8 +236,8 @@ async function loadArticleById(id: string) {
         : { id: '#', name: linkName };
     });
 
-    // 显示侧栏
-    status.showSidePanel = true;
+  // 显示侧边栏
+  openSidePanel();
 
     // 在内容更新后，检测是否需要显示折叠按钮
     nextTick(() => {
@@ -645,6 +666,12 @@ onMounted(() => {
   nextTick(() => {
     checkTagsOverflow();
   });
+  window.addEventListener('popstate', handlePopState);
+});
+
+// 在组件销毁时移除事件监听器
+onBeforeUnmount(() => {
+  window.removeEventListener('popstate', handlePopState);
 });
 
 </script>
