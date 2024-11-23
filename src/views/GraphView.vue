@@ -52,6 +52,13 @@ const props = reactive({
   enableCollideForce: true,
   centerForceStrength: 1,
   enableCenterForce: true,
+  // 径向力，用于居中
+  enableRadialForce: true,
+  radialStrength: 0.8,
+  centerX: 0,
+  centerY: 0,
+  minRadius: 50,
+  maxRadius: 500,
   // 永久仿真
   permanentAnim: true,
   // 拖拽更新节点
@@ -85,6 +92,10 @@ function initGraph(container: HTMLElement | null) {
   const height = container.clientHeight;
   status.width = width;
   status.height = height;
+
+  props.centerX = width / 2;
+  props.centerY = height / 2;
+
 
   const svg = d3.select(container)
     .append('svg')
@@ -164,9 +175,18 @@ function loadGraph(graphData: Graph) {
     .attr("class", "name")
     .attr("fill", props.textColor)
     .attr("dy", (d) => getSizeFactor(d.link_count) * props.textYOffest)
-    .attr("dx", (d) => -getSizeFactor(d.link_count) * props.textYOffest/8)
+    .attr("dx", (d) => -getSizeFactor(d.link_count) * props.textYOffest / 8)
     .attr("font-size", (d) => getSizeFactor(d.link_count) * props.textSize)
     .text((d) => d.name);
+
+  const degrees = nodes.map(node => node.link_count || 0);
+  const maxDegree = Math.max(...degrees);
+  const minDegree = Math.min(...degrees);
+
+  const degreeToRadius = d3.scaleLinear()
+    .domain([minDegree, maxDegree])
+    .range([props.maxRadius, props.minRadius]); // Inverse relation
+
 
   const simulation = d3
     .forceSimulation()
@@ -244,6 +264,16 @@ function loadGraph(graphData: Graph) {
       "center",
       props.enableCenterForce
         ? d3.forceCenter(status.width / 2, status.height / 2).strength(props.centerForceStrength)
+        : null
+    )
+    .force(
+      "radial",
+      props.enableRadialForce
+        ? d3.forceRadial(
+          (d: Node) => degreeToRadius(d.link_count || 1), // Radius based on degree
+          props.centerX,
+          props.centerY
+        ).strength(props.radialStrength)
         : null
     )
     .on("tick", () => {
