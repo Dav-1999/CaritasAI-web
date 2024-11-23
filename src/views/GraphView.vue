@@ -28,12 +28,15 @@ const props = reactive({
   curNodeCount: 500,
   minZoom: 0.01,
   maxZoom: 10,
-  initZoom: 0.01,
+  initZoom: 0.06,
+
+  minSize: 1,
+  maxSize: 30,
 
 
   initAlpha: 1,
-  initOffsetPos: [600, 300],
-  alphaDecay: 0.02,
+  initOffsetPos: [300, 300],
+  alphaDecay: 0,
   // force
   linkDistance: 5000,
   linkStrength: .2,
@@ -41,19 +44,19 @@ const props = reactive({
   velocityDecay: 0.6,
   // 精度，默认0.9
   chargeTheta: 0.9,
-  chargeStrength: -300,
+  chargeStrength: -900,
   // 设置节点远离的范围
-  chargeDistanceMax: 3999,
+  chargeDistanceMax: 4000,
   chargeDistanceMin: 1,
   enableChargeForce: true,
-  collideRadius: 42,
-  collideStrength: 1,
+  collideRadius: 2,
+  collideStrength: .8,
   collideIterations: 1,
   enableCollideForce: true,
   centerForceStrength: 1,
   enableCenterForce: true,
   // 径向力，用于居中
-  enableRadialForce: true,
+  enableRadialForce: false,
   radialStrength: 0.8,
   centerX: 0,
   centerY: 0,
@@ -71,16 +74,47 @@ const status = reactive({
   curZoom: props.initZoom,
   curAlpha: props.initAlpha,
   dragging: false,
-  curNode: null,
+  curNode: {} as Node,
   width: 0,
   height: 0,
   showSidePanel: false,
   hoverNode: new Set<Node>(),
-  hoverLink: new Set(),
-  hoverName: new Set(),
+  hoverLink: new Set<Link>(),
+  hoverName: new Set<Node>(),
 });
 
 const graphContainer = ref<HTMLElement | null>(null);
+
+setInterval(() => {
+
+  if (status.dragging) {
+    // 设置高亮节点中元素的样式
+    status.hoverNode.forEach((nodeData) => {
+      d3.selectAll<SVGCircleElement, Node>(".node")
+        .filter((d) => d.id === nodeData.id)
+        .attr("fill", props.hoverColor)
+        .style("opacity", 1);
+    });
+
+    status.hoverLink.forEach((linkData) => {
+      d3.selectAll<SVGLineElement, Link>(".link")
+        .filter((d) => {
+          const link = d as Link;
+          const source = link.source as Node;
+          const target = link.target as Node;
+          return source.id === (linkData.source as Node).id && target.id === (linkData.target as Node).id
+        })
+        .style("stroke", props.hoverColor)
+        .style("stroke-opacity", 1);
+    });
+
+    status.hoverName.forEach((nodeData) => {
+      d3.selectAll<SVGTextElement, Node>(".name")
+        .filter((d) => d.id === nodeData.id)
+        .style("opacity", 1);
+    });
+  }
+}, 200);
 
 
 function initGraph(container: HTMLElement | null) {
@@ -126,13 +160,18 @@ function loadGraph(graphData: Graph) {
   const content = d3.select(".zoomable");
 
   // link-size map
-  // 提供连接数分级大小表， 方差为108，太大了，按均值5来分5级
-  const getSizeFactor = (linkCount: number) => {
-    if (linkCount < 5) return linkCount;
-    if (linkCount < 10) return 5;
+  const degrees = nodes.map(node => node.link_count);
+  const maxDegree = Math.max(...degrees);
+  const minDegree = Math.min(...degrees);
 
-    return Math.floor(linkCount / 10) + 1;
-  }
+  const degreeToRadius = d3.scaleLinear()
+    .domain([minDegree, maxDegree])
+    .range([props.minRadius, props.maxRadius]); // Inverse relation
+  // 提供连接数分级大小表， 方差为108，太大了，按均值5来分5级
+
+  const sizeScale = d3.scaleLinear()
+    .domain([minDegree, maxDegree])
+    .range([props.minSize, props.maxSize]); // 根据需要调整范围
 
   const link = content
     .selectAll<SVGLineElement, Link>(".link")
@@ -147,7 +186,7 @@ function loadGraph(graphData: Graph) {
     .data(nodes)
     .join("circle")
     .attr("class", "node")
-    .attr("r", (d) => getSizeFactor(d.link_count) * props.nodeSize)
+    .attr("r", (d) => sizeScale(d.link_count) * props.nodeSize)
     .attr("fill", props.nodeColor)
     .call(
       d3
@@ -156,6 +195,8 @@ function loadGraph(graphData: Graph) {
           if (!event.active) simulation?.alphaTarget(0.3).restart();
           d.fx = d.x;
           d.fy = d.y;
+
+          status.dragging = true;
         })
         .on("drag", (event, d) => {
           d.fx = event.x;
@@ -163,8 +204,14 @@ function loadGraph(graphData: Graph) {
         })
         .on("end", (event, d) => {
           if (!event.active) simulation?.alphaTarget(0);
+
+          status.dragging = false;
+          status.curNode = {} as Node;
           d.fx = null;
           d.fy = null;
+          status.hoverLink.clear();
+          status.hoverNode.clear();
+          status.hoverName.clear();
         })
     );
 
@@ -174,18 +221,70 @@ function loadGraph(graphData: Graph) {
     .join("text")
     .attr("class", "name")
     .attr("fill", props.textColor)
-    .attr("dy", (d) => getSizeFactor(d.link_count) * props.textYOffest)
-    .attr("dx", (d) => -getSizeFactor(d.link_count) * props.textYOffest / 8)
-    .attr("font-size", (d) => getSizeFactor(d.link_count) * props.textSize)
+    .attr("dy", (d) => sizeScale(d.link_count) * props.textYOffest)
+    .attr("dx", (d) => -sizeScale(d.link_count) * props.textYOffest / 8)
+    .attr("font-size", (d) => (sizeScale(d.link_count) + 1) * props.textSize)
     .text((d) => d.name);
 
-  const degrees = nodes.map(node => node.link_count || 0);
-  const maxDegree = Math.max(...degrees);
-  const minDegree = Math.min(...degrees);
+  node
+    .on("mouseover", function (event, d) {
+      if (status.dragging) return;
 
-  const degreeToRadius = d3.scaleLinear()
-    .domain([minDegree, maxDegree])
-    .range([props.maxRadius, props.minRadius]); // Inverse relation
+      node.attr("fill", props.nodeColor).style("opacity", 0.2);
+      link.style("stroke-opacity", 0.2);
+      name.style("opacity", 0.2);
+
+      d3.select(this).attr("fill", props.hoverColor).style("opacity", 1);
+      status.hoverNode.add(d);
+      status.curNode = d;
+
+      link
+        .filter((l) => l.source === d || l.target === d)
+        .style("stroke", props.hoverColor)
+        .style("stroke-opacity", 1)
+        .each(function (l) {
+          status.hoverLink.add(l);
+        });
+
+
+      // 高亮连接的节点和对应的标签
+      status.hoverName.clear();
+      // cur name
+      name
+        .filter((t) => t === d)
+        .style("opacity", 1)
+        .each(function (na) {
+          status.hoverName.add(na);
+        });
+      node
+        .filter((n) =>
+          links.some(
+            (l) =>
+              (l.source === d && l.target === n) ||
+              (l.source === n && l.target === d)
+          )
+        )
+        .attr("fill", props.hoverColor)
+        .style("opacity", 1)
+        .each(function (n) {
+          status.hoverNode.add(n);
+
+          name
+            .filter((t) => t === n)
+            .style("opacity", 1)
+            .each(function (na) {
+              status.hoverName.add(na);
+            });
+        });
+
+      // 关联的文字
+    })
+    .on("mouseout", function () {
+      if (status.dragging && status.curNode.id) return;
+      node.attr("fill", props.nodeColor).style("opacity", 1); // Reset nodes
+      link.style("stroke", props.lineColor).style("stroke-opacity", 0.6); // Reset links
+      name.style("opacity", 1); // Reset text
+    });
 
 
   const simulation = d3
@@ -233,12 +332,13 @@ function loadGraph(graphData: Graph) {
           .forceCollide()
           .radius((d) => {
             if (props.animOptimization) {
+              return props.collideRadius;
+            } else {
+
               const node = d as Node;
               // 高连接数节点排斥力更强
-              const degree = node.link_count || 1;
+              const degree = node.link_count;
               return props.collideRadius * Math.log2(degree + 2);
-            } else {
-              return props.collideRadius;
             }
           })
           .strength(props.collideStrength)
