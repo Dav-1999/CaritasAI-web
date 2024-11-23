@@ -170,7 +170,7 @@ function handlePopState(event: PopStateEvent) {
     status.showSidePanel = false;
 
     // 重置高亮状态
-    resetHighlighting();
+    // resetHighlighting();
 
     // 阻止默认的返回行为
     event.preventDefault();
@@ -231,10 +231,13 @@ async function loadArticleById(id: string) {
     // 更新关联文章列表
     relatedArticles.value = links.map((linkName: string) => {
       const relatedNode = (graphData).nodes.find((node) => node.name === linkName);
+
       return relatedNode
         ? { id: relatedNode.id, name: relatedNode.name }
         : { id: '#', name: linkName };
     });
+    // 筛掉为#的节点
+    relatedArticles.value = relatedArticles.value.filter((article) => article.id !== '#');
 
   // 显示侧边栏
   openSidePanel();
@@ -536,7 +539,7 @@ function loadGraph(graphData: Graph) {
     .on("mouseout", function (event) {
 
       event.stopPropagation();
-      if (status.dragging && status.curNode.id) return;
+      if (status.dragging || status.curNode.id) return;
       resetHighlighting();
     })
     .on("click", async function (event, d) {
